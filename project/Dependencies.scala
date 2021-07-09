@@ -13,6 +13,8 @@ object Dependencies {
   def ScoptVersion = "4.0.1"
   lazy val Scopt = "com.github.scopt" %% "scopt" % ScoptVersion
 
+  lazy val SttpZio = "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % "3.3.9"
+
   def ZioGroup = "dev.zio"
   def ZioVersion = "1.0.9"
   lazy val Zio = ZioGroup %% "zio" % ZioVersion

@@ -12,8 +12,6 @@
 
 package net.wayfarerx.loremaster
 
-import net.wayfarerx.loremaster
-
 import java.time.Instant
 import zio.Task
 
@@ -67,6 +65,7 @@ object Authority:
 
   import zio.{Has, RIO, RLayer, UIO, ZLayer}
 
+  /** The index of lore names and locations produced by authorities. */
   type Index = Map[String, String]
 
   /** The designator for the TES Imperial Library authority. */
@@ -124,29 +123,37 @@ object Authority:
   inline def downloadLore(location: String, ifModifiedAfter: Instant): RIO[Has[Authority], Option[Lore]] =
     RIO.service flatMap (_.downloadLore(location, ifModifiedAfter))
 
-  import java.net.URL
+  import java.net.URI
 
-  trait Website extends Authority:
+  trait Website extends Authority :
 
-    val indexAt: Task[URL]
+    protected val root: Task[URI]
 
     final override def downloadIndex(ifModifiedAfter: Option[Instant]): Task[Option[Index]] = for
-      index <- indexAt
+      index <- root
       webpage <- downloadWebpage(index, ifModifiedAfter)
-      result <- webpage map (parseIndex(_) map (Some(_))) getOrElse UIO.none
+      result <- webpage map (parseIndex(_) map (i => Some(i.view.mapValues(_.toString).toMap))) getOrElse UIO.none
     yield result
 
-    final override def downloadLore(location: String, ifModifiedAfter: Option[Instant]): Task[Option[Lore]] = ???
+    final override def downloadLore(location: String, ifModifiedAfter: Option[Instant]): Task[Option[Lore]] = for
+      lore <- Task(URI(location))
+      webpage <- downloadWebpage(lore, ifModifiedAfter)
+      result <- webpage map (parseLore(_) map (Some(_))) getOrElse UIO.none
+    yield result
 
-    protected def parseIndex(webpage: String): Task[Index]
+    protected def parseIndex(webpage: String): Task[Map[String, URI]]
 
-    private final def downloadWebpage(at: URL, ifModifiedAfter: Option[Instant]): Task[Option[String]] = ???
+    protected def parseLore(webpage: String): Task[Lore]
+
+    private final def downloadWebpage(at: URI, ifModifiedAfter: Option[Instant]): Task[Option[String]] = ???
 
   /**
    * The Elder Scrolls Imperial Library authority.
    */
   private object ImperialLibrary extends Website :
 
-    override val indexAt = Task(URL("https://www.imperial-library.info/books/all/by-title"))
+    override protected val root = Task(URI("https://www.imperial-library.info/books/all/by-title"))
 
-    override protected def parseIndex(webpage: String): Task[Index] = ???
+    override protected def parseIndex(webpage: String): Task[Map[String, URI]] = ???
+
+    override protected def parseLore(webpage: String): Task[Lore] = ???

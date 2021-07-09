@@ -70,11 +70,13 @@ object Loremaster extends zio.App :
    * @param command   The optional command that should be executed.
    * @param storage   The path or URL to use for storing persistant data.
    * @param authority The URL to fectch the index from.
+   * @param frequency The frequency that the library is synchronized with the authority.
    */
   private case class Settings(
     command: Command = Command.Test,
     storage: String = s"~/.$Application",
-    authority: String = Authority.TesImperialLibrary
+    authority: String = Authority.TesImperialLibrary,
+    frequency: String = "weekly"
   ) extends Configuration
 
   /**
@@ -84,12 +86,10 @@ object Loremaster extends zio.App :
    */
   private enum Command(val effect: RIO[Environemnt, Unit]):
 
-    import zio.console._
-
     case Test extends Command(
       for
         storage <- Configuration.storage
-        _ <- putStrLn(s"Storage: $storage")
+        _ <- zio.console.putStrLn(s"Storage: $storage")
       yield ()
     )
 
