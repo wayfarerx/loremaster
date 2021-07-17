@@ -12,8 +12,7 @@ object Loremaster extends zio.App :
   private type Environemnt = ZEnv &
     Has[Configuration] &
     Has[Storage] &
-    Has[Library] &
-    Has[Authority]
+    Has[Library]
 
   /** The name of this application. */
   private val Application = "loremaster"
@@ -28,11 +27,11 @@ object Loremaster extends zio.App :
       .valueName("<url>")
       .text("The path or URL to use for storing persistant data.")
       .action((s, c) => c.copy(storage = s))
-    // Authority designation is currently disabled.
-    // opt[String]('a', "authority")
+    // Library designation is currently disabled.
+    // opt[String]('l', "library")
     //   .valueName("<designator>")
-    //   .text("The designator of the authority to use.")
-    //   .action((a, c) => c.copy(authority = a))
+    //   .text("The designator of the library to use.")
+    //   .action((l, c) => c.copy(library = l))
     cmd("test")
       .text(s"Tests $Application.")
       .action((_, c) => c.copy(command = Command.Test))
@@ -55,13 +54,11 @@ object Loremaster extends zio.App :
   private def apply(settings: Settings): RIO[ZEnv, Unit] =
     val configuration = ZLayer.succeed[Configuration](settings)
     val storage = configuration >>> Storage.live
-    val library = storage >>> Library.live
-    val authority = configuration >>> Authority.live
+    val library = storage ++ configuration >>> Library.live
     settings.command.effect.provideCustomLayer(
       configuration ++
         storage ++
-        library ++
-        authority
+        library
     )
 
   /**
@@ -69,14 +66,13 @@ object Loremaster extends zio.App :
    *
    * @param command   The optional command that should be executed.
    * @param storage   The path or URL to use for storing persistant data.
-   * @param authority The URL to fectch the index from.
-   * @param frequency The frequency that the library is synchronized with the authority.
+   * @param library   The designator of the library to fectch lore data from.
+   * @param frequency The frequency that the library is synchronized with the library.
    */
   private case class Settings(
     command: Command = Command.Test,
     storage: String = s"~/.$Application",
-    authority: String = Authority.TesImperialLibrary,
-    frequency: String = "weekly"
+    library: String = Library.TesImperialLibraryDesignator
   ) extends Configuration
 
   /**
@@ -92,5 +88,3 @@ object Loremaster extends zio.App :
         _ <- zio.console.putStrLn(s"Storage: $storage")
       yield ()
     )
-
-//case Sync extends Command(Reference.sync)

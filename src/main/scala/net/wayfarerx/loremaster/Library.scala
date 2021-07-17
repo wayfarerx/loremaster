@@ -21,48 +21,19 @@ import zio.Task
 trait Library:
 
   /**
-   * Returns true if this library contains lore with the specified ID.
+   * Returns the lore IDs that this library provides.
    *
-   * @param id The ID of the lore to look for.
-   * @return The result of attempting to return true if this library contains lore with the specified ID.
+   * @return The lore IDs that this library provides.
    */
-  def exists(id: String): Task[Boolean]
-
-  /**
-   * Returns the instant that the specified lore was last modified if it exists.
-   *
-   * @param id The ID of the lore to look for.
-   * @return The result of attempting to return the instant that the specified lore was last modified if it exists.
-   */
-  def lastModified(id: String): Task[Option[Instant]]
-
-  /**
-   * Loads lore from this library if it exists.
-   *
-   * @param id The ID of the lore to load.
-   * @return The result of attempting to load lore from this library if it exists.
-   */
-  def load(id: String): Task[Option[Lore]]
-
-  /**
-   * Saves lore in this library.
-   *
-   * @param id    The ID of the lore to save.
-   * @param lore The lore to save.
-   * @return The result of attempting to save lore in this library.
-   */
-  def save(id: String, lore: Lore): Task[Unit]
-
-  /**
-   * Deletes lore from this library.
-   *
-   * @param id The ID of the lore to delete.
-   * @return The result of attempting to delete lore from this library.
-   */
-  def delete(id: String): Task[Unit]
-
-  /** Returns the IDs of the entries in this library. */
   def list: Task[Set[String]]
+
+  /**
+   * Returns the lore with the specified ID.
+   *
+   * @param id The ID of the lore to return.
+   * @return The lore with the specified ID.
+   */
+  def load(id: String): Task[Lore]
 
 /**
  * Definitions associated with library services.
@@ -71,133 +42,94 @@ object Library:
 
   import zio.{Has, RIO, RLayer, UIO, ZLayer}
 
+  /** The designator for the TES Imperial Library. */
+  val TesImperialLibraryDesignator = "TesImperialLibrary"
+
   /** The live library layer. */
-  val live: RLayer[Has[Storage], Has[Library]] =
-    ZLayer.fromEffect(RIO.service flatMap apply)
-
-  /**
-   * Creates a library that uses the specified storage service.
-   *
-   * @param storage The storage service to use.
-   * @return A library that uses the specified storage service.
-   */
-  def apply(storage: Storage): Task[Library] = UIO(Live(storage))
-
-  /**
-   * Returns true if the library contains lore with the specified ID.
-   *
-   * @param id The ID of the lore to look for.
-   * @return The result of attempting to return true if the library contains lore with the specified ID.
-   */
-  inline def exists(id: String): RIO[Has[Library], Boolean] = RIO.service flatMap (_.exists(id))
-
-  /**
-   * Returns the instant that the specified lore was last modified if it exists.
-   *
-   * @param id The ID of the lore to look for.
-   * @return The result of attempting to return the instant that the specified lore was last modified if it exists.
-   */
-  inline def lastModified(id: String): RIO[Has[Library], Option[Instant]] = RIO.service flatMap (_.lastModified(id))
-
-  /**
-   * Loads lore from the library.
-   *
-   * @param id The ID of the lore to load.
-   * @return The result of attempting to load lore from the library.
-   */
-  inline def load(id: String): RIO[Has[Library], Option[Lore]] = RIO.service flatMap (_.load(id))
-
-  /**
-   * Saves lore to the library.
-   *
-   * @param id    The ID of the lore to save.
-   * @param lore The lore to save to the library.
-   * @return The result of attempting to save lore to the library.
-   */
-  inline def save(id: String, lore: Lore): RIO[Has[Library], Unit] = RIO.service flatMap (_.save(id, lore))
-
-  /**
-   * Deletes lore from the library.
-   *
-   * @param id The ID of the lore to delete.
-   * @return The result of attempting to delete lore from the library.
-   */
-  inline def delete(id: String): RIO[Has[Library], Unit] = RIO.service flatMap (_.delete(id))
-
-  /** Returns the IDs of the entries in the library. */
-  inline def list: RIO[Has[Library], Set[String]] = RIO.service flatMap (_.list)
-
-  /**
-   * A library service that uses storage.
-   *
-   * @param storage The storage to use.
-   */
-  private case class Live(storage: Storage) extends Library :
-
-    import io.circe.generic.auto._
-    import io.circe.syntax._
-    import Live._
-
-    /* Return true if this library contains lore with the specified ID. */
-    override def exists(id: String) =
-      storage exists resolve(id)
-
-    /* Return the instant that the specified lore was last modified if it exists. */
-    override def lastModified(id: String) =
-      storage lastModified resolve(id)
-
-    /* Load lore from this library if it exists. */
-    override def load(id: String) = for
-      text <- storage load resolve(id)
-      lore <- text match
-        case Some(json) =>
-          for
-            decoded <- Task(io.circe.parser.decode[Lore](json))
-            result <- decoded.fold(fail(_), UIO.some)
-          yield result
-        case None => UIO.none
-    yield lore
-
-    /* Save lore in this library. */
-    override def save(id: String, lore: Lore) = for
-      text <- Task(Lore(
-        lore.title map normalize filter nonEmpty,
-        lore.author map normalize filter nonEmpty,
-        lore.paragraphs.iterator.map(normalize).filter(nonEmpty).toList
-      ).asJson.noSpaces)
-      _ <- storage.save(resolve(id), text)
-    yield ()
-
-    /* Delete lore from this library. */
-    override def delete(id: String) =
-      storage delete resolve(id)
-
-    /* Return the IDs of the entries in this library. */
-    override def list = for listed <- storage list Prefix yield listed collect {
-      case file if file endsWith Suffix => file.substring(Prefix.length, file.length - Suffix.length)
+  val live: RLayer[Has[Storage] & Has[Configuration], Has[Library]] =
+    ZLayer fromEffect {
+      for
+        storage <- RIO.service[Storage]
+        configuration <- RIO.service[Configuration]
+        library <- apply(storage, configuration.library)
+      yield library
     }
 
   /**
-   * Definitions associated with stored library services.
+   * Creates an library of the specified designator's type.
+   *
+   * @param storage    The storage service to use for caching.
+   * @param designator The designator that identifies the type of library to create.
+   * @return Ann library of the specified designator's type.
    */
-  private object Live extends (Storage => Live) :
+  def apply(storage: Storage, designator: String): Task[Library] = designator match
+    case tesImperialLibrary if tesImperialLibrary.trim equalsIgnoreCase TesImperialLibraryDesignator =>
+      UIO(TesImperialLibrary(storage))
+    case invalid =>
+      fail(s"""Invalid library designator: "$invalid".""")
 
-    /** The prefix used for storing library entries. */
-    private val Prefix = "library/lore/"
-
-    /** The suffix used for storing library entries. */
-    private val Suffix = ".json"
-
-    /** A function that identifies non-empty strings. */
-    private val nonEmpty: String => Boolean = _.nonEmpty
-
-    /** A function that trims and normalizes whitespace. */
-    private val normalize: String => String = _.trim.replaceAll("\\s+", " ")
+  /**
+   * Returns the lore IDs that the library provides.
+   *
+   * @return The lore IDs that the library provides.
+   */
+  inline def list: RIO[Has[Library], Set[String]] = for
+    library <- RIO.service
+    result <- library.list
+  yield result
 
     /**
-     * Returns the name of the file to store entries with the specified ID in.
-     *
-     * @param id The ID of the lore to resolve.
-     * @return The name of the file to store entries with the specified ID in.
-     */
-    inline private def resolve(id: String): String = s"$Prefix$id$Suffix"
+   * Returns the lore with the specified ID.
+   *
+   * @param id The ID of the lore to return.
+   * @return The lore with the specified ID.
+   */
+  inline def load(id: String): RIO[Has[Library], Lore] = for
+    library <- RIO.service
+    result <- library.load(id)
+  yield result
+
+  import java.net.URI
+
+  trait Website extends Library :
+
+    protected val storage: Storage
+
+    protected val designator: String
+
+    protected val index: Task[URI]
+
+    private lazy val cache = s"library/$designator/"
+
+    final override val list: Task[Set[String]] = for
+      indexAt <- index
+      webpage <- downloadWebpage(indexAt)
+      result <- parseIndex(webpage) map (_.view.mapValues(_.toString).toMap)
+    yield result
+
+    final override def load(id: String): Task[Lore] = for
+      loreAt <- Task(URI(id))
+      webpage <- downloadWebpage(loreAt)
+      result <- parseLore(webpage)
+    yield result
+
+    protected def parseIndex(webpage: String): Task[Set[URI]]
+
+    protected def parseLore(webpage: String): Task[Lore]
+
+    private final lazy def pathOf(uri: URI): Task[String] = ???
+
+    private final def downloadWebpage(at: URI): Task[String] = ???
+
+  /**
+   * The Elder Scrolls Imperial Library library.
+   */
+  private case class TesImperialLibrary(storage: Storage) extends Website :
+
+    override protected val designator: String = TesImperialLibraryDesignator
+
+    override protected val index = Task(URI("https://www.imperial-library.info/books/all/by-title/"))
+
+    override protected def parseIndex(webpage: String): Task[Set[URI]] = ???
+
+    override protected def parseLore(webpage: String): Task[Lore] = ???

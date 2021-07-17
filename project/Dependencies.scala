@@ -6,9 +6,9 @@ object Dependencies {
 
   def CirceGroup = "io.circe"
   def CirceVersion = "0.14.1"
-  lazy val CirceCore = CirceGroup %% "circe-core" %CirceVersion
-  lazy val CirceGeneric = CirceGroup %% "circe-generic" %CirceVersion
-  lazy val CirceParser = CirceGroup %% "circe-parser" %CirceVersion
+  lazy val CirceCore = CirceGroup %% "circe-core" % CirceVersion
+  lazy val CirceGeneric = CirceGroup %% "circe-generic" % CirceVersion
+  lazy val CirceParser = CirceGroup %% "circe-parser" % CirceVersion
 
   def ScoptVersion = "4.0.1"
   lazy val Scopt = "com.github.scopt" %% "scopt" % ScoptVersion

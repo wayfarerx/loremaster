@@ -277,23 +277,23 @@ object Storage:
     /** Creates a path from a string. */
     inline private def pathOf(str: String) = Task(Path.of(str))
 
-    /** Checks if a path exists. */
-    inline private def filesExists(path: Path) = Task(Files.exists(path))
-
-    /** Returns the instant that the specified path was last modififed. */
-    inline private def filesGetLastModified(path: Path) = Task(Files.getLastModifiedTime(path)) map (_.toInstant)
-
     /** Converts a path into its absolute form. */
     inline private def toAbsolutePath(path: Path) = Task(path.toAbsolutePath)
-
-    /** Checks if a path is a directory. */
-    inline private def filesIsDirectory(path: Path) = Task(Files.isDirectory(path))
 
     /** Resolves a child path against a parent path. */
     inline private def resolve(parent: Path, child: Path) = Task(parent.resolve(child))
 
     /** Relativises the descendant path against an ancestor path. */
     inline private def relativize(ancestor: Path, descendant: Path) = Task(ancestor.relativize(descendant))
+
+    /** Checks if a path exists. */
+    inline private def filesExists(path: Path) = Task(Files.exists(path))
+
+    /** Checks if a path is a directory. */
+    inline private def filesIsDirectory(path: Path) = Task(Files.isDirectory(path))
+
+    /** Returns the instant that the specified path was last modififed. */
+    inline private def filesGetLastModified(path: Path) = Task(Files.getLastModifiedTime(path)) map (_.toInstant)
 
     /** Lists the children of a path. */
     inline private def filesList(path: Path) = Task(Files.list(path).iterator.asScala)

@@ -20,11 +20,8 @@ trait Configuration:
   /** The path or URL to use for storing persistant data. */
   def storage: String
 
-  /** The authority that serves as the source of truth. */
-  def authority: String
-
-  /** The frequency that the library is synchronized with the authority. */
-  def frequency: String
+  /** The library that serves as the source of truth. */
+  def library: String
 
 /**
  * Definitions associated with configurations.
@@ -36,8 +33,5 @@ object Configuration:
   /** Returns the path or URL to use for storing persistant data. */
   val storage: URIO[Has[Configuration], String] = URIO.service map (_.storage)
 
-  /** Returns the authority that serves as the source of truth. */
-  val authority: URIO[Has[Configuration], String] = URIO.service map (_.authority)
-
-  /** Returns the frequency that the library is synchronized with the authority. */
-  val frequency: URIO[Has[Configuration], String] = URIO.service map (_.frequency)
+  /** Returns the library that serves as the source of truth. */
+  val library: URIO[Has[Configuration], String] = URIO.service map (_.library)
