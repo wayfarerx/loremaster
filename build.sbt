@@ -8,6 +8,21 @@ lazy val root = project.in(file(".")).settings(
   scalaVersion := Scala3Version,
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores"),
 
-  libraryDependencies ++= Seq(CirceCore, CirceGeneric, CirceParser, Scopt, SttpZio, Zio, ZioTest, ZioTestSbt),
+  libraryDependencies ++= Seq(
+    CirceCore,
+    CirceGeneric,
+    CirceParser,
+    Jsoup,
+    LogbackCore,
+    LogbackClassic,
+    OpenNlpTools,
+    Scopt,
+    Slf4jApi,
+    SttpZio,
+    Zio,
+    ZioTest,
+    ZioTestSbt
+  ),
+
   testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 )

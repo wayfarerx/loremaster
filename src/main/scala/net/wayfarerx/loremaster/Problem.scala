@@ -18,38 +18,46 @@ package net.wayfarerx.loremaster
  * @param message The message that describes this problem.
  * @param cause   The optional cause of this problem.
  */
-case class Problem(message: String, cause: Option[Throwable]) extends RuntimeException(message) :
+case class Problem private(message: String, cause: Option[Throwable]) extends RuntimeException(message) :
 
   /* Determine the cause of this problem. */
   override def getCause: Throwable = cause getOrElse super.getCause
 
 /**
- * Factory for problems.
+ * The factory for problems.
  */
-object Problem extends ((String, Option[Throwable]) => Problem) :
+object Problem:
 
   /**
-   * Creates a problem with the specified message.
+   * Creates a problem.
    *
    * @param message The message that describes the problem.
-   * @return A problem with the specified message.
+   * @return A new problem.
    */
-  inline def apply(message: String): Problem = Problem(message, None)
+  def apply(message: String): Problem = Problem(message, None)
 
   /**
-   * Creates a problem from the specified cause.
-   *
-   * @param cause The cause of the problem.
-   * @return A problem from the specified cause.
-   */
-  inline def apply(cause: Throwable): Problem =
-    Problem(Option(cause.getMessage) getOrElse cause.getClass.getSimpleName, Some(cause))
-
-  /**
-   * Creates a problem with the specified message and cause.
+   * Creates a problem.
    *
    * @param message The message that describes the problem.
-   * @param cause The cause of the problem.
-   * @return A problem with the specified message and cause.
+   * @param cause   The throwable that caused the problem.
+   * @return A new problem.
    */
-  inline def apply(message: String, cause: Throwable): Problem = Problem(message, Some(cause))
+  def apply(message: String, cause: Throwable): Problem =
+    Option(cause).fold(Problem(resolveMessage(message), None)) { _cause =>
+      Problem(resolveMessage(message, _cause.getMessage), Some(_cause))
+    }
+
+  /**
+   * Returns a non-null, non-empty & non-whitespace message that describes a problem.
+   *
+   * @param message     The message to consult first and return if it is valid.
+   * @param findMessage The operation to consult sencond and return the result of if it is valid.
+   * @return A non-null, non-empty & non-whitespace message that describes a problem.
+   */
+  private def resolveMessage(message: String = "", findMessage: => String = ""): String =
+
+    /* Return a non-null, non-empty & non-whitespace message if applicable. */
+    inline def resolve(msg: String): Option[String] = Option(msg) map (_.trim) filterNot (_.isEmpty)
+
+    resolve(message) orElse resolve(findMessage) getOrElse "Problem encountered."
