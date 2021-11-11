@@ -4,6 +4,10 @@ object Dependencies {
 
   def Scala3Version = "3.0.0"
 
+  def CaffeineGroup = "com.github.ben-manes.caffeine"
+  def CaffeineVersion = "3.0.4"
+  lazy val Caffeine = CaffeineGroup % "caffeine" % CaffeineVersion
+
   def CirceGroup = "io.circe"
   def CirceVersion = "0.14.1"
   lazy val CirceCore = CirceGroup %% "circe-core" % CirceVersion
@@ -33,6 +37,7 @@ object Dependencies {
   def ZioGroup = "dev.zio"
   def ZioVersion = "1.0.11"
   lazy val Zio = ZioGroup %% "zio" % ZioVersion
+  lazy val ZioCache = ZioGroup %% "zio-cache" % "0.1.0"
   lazy val ZioTest = ZioGroup %% "zio-test" % ZioVersion % "test"
   lazy val ZioTestSbt = ZioGroup %% "zio-test-sbt" % ZioVersion % "test"
 

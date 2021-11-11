@@ -31,10 +31,29 @@ object Problem:
   /**
    * Creates a problem.
    *
+   * @return A new problem.
+   */
+  def apply(): Problem =
+    Problem("Problem encountered.", None)
+
+
+  /**
+   * Creates a problem.
+   *
    * @param message The message that describes the problem.
    * @return A new problem.
    */
-  def apply(message: String): Problem = Problem(message, None)
+  def apply(message: String): Problem =
+    resolve(message).fold(apply())(Problem(_, None))
+
+  /**
+   * Creates a problem.
+   *
+   * @param cause The throwable that caused the problem.
+   * @return A new problem.
+   */
+  def apply(cause: Throwable): Problem =
+    Option(cause).fold(apply())(c => Problem(resolveMessage(c.getMessage), Some(c)))
 
   /**
    * Creates a problem.
@@ -44,20 +63,24 @@ object Problem:
    * @return A new problem.
    */
   def apply(message: String, cause: Throwable): Problem =
-    Option(cause).fold(Problem(resolveMessage(message), None)) { _cause =>
-      Problem(resolveMessage(message, _cause.getMessage), Some(_cause))
-    }
+    val _cause = Option(cause)
+    Problem(resolveMessage(message, _cause.fold("")(_.getMessage)), _cause)
 
   /**
    * Returns a non-null, non-empty & non-whitespace message that describes a problem.
    *
    * @param message     The message to consult first and return if it is valid.
-   * @param findMessage The operation to consult sencond and return the result of if it is valid.
+   * @param findMessage The operation to consult second and return the result of if it is valid.
    * @return A non-null, non-empty & non-whitespace message that describes a problem.
    */
   private def resolveMessage(message: String = "", findMessage: => String = ""): String =
-
-    /* Return a non-null, non-empty & non-whitespace message if applicable. */
-    inline def resolve(msg: String): Option[String] = Option(msg) map (_.trim) filterNot (_.isEmpty)
-
     resolve(message) orElse resolve(findMessage) getOrElse "Problem encountered."
+
+  /**
+   * Returns a non-null, non-empty & non-whitespace message.
+   *
+   * @param message The message to resolve.
+   * @return A non-null, non-empty & non-whitespace message.
+   */
+  private inline def resolve(message: String): Option[String] =
+    Option(message) map (_.trim) filterNot (_.isEmpty)

@@ -19,96 +19,52 @@ package model
 sealed trait Token
 
 /**
- * Definitions of the token implementations.
+ * Definitions associate with the token implementations.
  */
 object Token:
 
-  import cats.data.NonEmptyList
-  import io.circe.{Decoder, DecodingFailure, Encoder, HCursor, Json}
-  import io.circe.syntax.*
-
-  /** The given token encoder. */
-  given Encoder[Token] = _ match
-    case t@Text(_, _) => Encoder[Text] apply t
-    case n@Name(_) => Encoder[Name] apply n
-
-  /** The given token decoder. */
-  given Decoder[Token] = cursor =>
-    Decoder[Text].apply(cursor) orElse Decoder[Name].apply(cursor)
-
-  /**
-   * Reports a failure to decode a token.
-   *
-   * @param cursor The cursor where the failure occurred.
-   * @return A failure report when decoding a token.
-   */
-  private def decodingFailed(cursor: HCursor): Decoder.Result[Nothing] =
-    Left(DecodingFailure(s"Failed to decode token.", cursor.history))
+  /** The given token ordering. */
+  given Ordering[Token] = (x, y) => x match
+    case Text(xString, xPartOfSpeech) => y match
+      case Text(yString, yPartOfSpeech) => xString compareTo yString match
+        case 0 => xPartOfSpeech.fold(yPartOfSpeech.fold(0)(_ => -1))(xpos => yPartOfSpeech.fold(1)(xpos.compareTo))
+        case nonZero => nonZero
+      case Name(yText, _) => xString compareTo yText match
+        case 0 => -1
+        case nonZero => nonZero
+    case Name(xText, xCategory) => y match
+      case Name(yText, yCategory) => xText compareTo yText match
+        case 0 => xCategory.ordinal - yCategory.ordinal
+        case nonZero => nonZero
+      case Text(yString, _) => xText compareTo yString match
+        case 0 => 1
+        case nonZero => nonZero
 
   /**
    * A single piece of lore text.
    *
-   * @param content      The content of the lore text.
-   * @param partOfSpeech The part of speech this lore text is tagged with.
+   * @param string The content of the lore text token.
+   * @param partOfSpeech The part of speech this lore text token is tagged with.
    */
-  case class Text(content: String, partOfSpeech: Option[String] = None) extends Token
-
-  /**
-   * Factoiry for single pieces of lore text.
-   */
-  object Text extends ((String, Option[String]) => Text) :
-
-    /** The "txt" field name. */
-    private val TXT = "txt"
-
-    /** The "pos" field name. */
-    private val POS = "pos"
-
-    /** The text token encoder. */
-    given Encoder[Text] = token =>
-      token.partOfSpeech match
-        case Some(pos) => Json.obj(TXT -> Json.fromString(token.content), POS -> Json.fromString(pos))
-        case None => Json.obj(TXT -> Json.fromString(token.content))
-
-    /** The text token decoder. */
-    given Decoder[Text] = cursor =>
-      cursor.downField(TXT).success match
-        case Some(txt) =>
-          cursor.downField(POS).success match
-            case Some(pos) =>
-              for
-                _txt <- Decoder.decodeString(txt)
-                _pos <- Decoder.decodeString(pos)
-              yield Text(_txt, Some(_pos))
-            case None =>
-              Decoder.decodeString(txt) map (Text(_))
-        case None => decodingFailed(cursor)
+  case class Text(string: String, partOfSpeech: Option[String] = None) extends Token
 
   /**
    * A single lore name.
    *
-   * @param tokens The non-empty list of text tokens that define this name.
+   * @param text     The full text of this name.
+   * @param category The category of this name.
    */
-  case class Name(tokens: NonEmptyList[Text]) extends Token
+  case class Name(text: String, category: Name.Category) extends Token
 
   /**
-   * Factoiry for single lore names.
+   * Factory for single lore names.
    */
-  object Name extends (NonEmptyList[Text] => Name) :
+  object Name extends ((String, Name.Category) => Name) :
 
-    /** The "name" field name. */
-    private val NAME = "name"
+    /**
+     * Definitions of the supported name categories.
+     */
+    enum Category :
 
-    /** The name token encoder. */
-    given Encoder[Name] = token =>
-      Json.obj(NAME -> Json.fromValues(token.tokens.iterator map (_.asJson) to Iterable))
-
-    /** The name token decoder. */
-    given Decoder[Name] = cursor =>
-      cursor.downField(NAME).success match
-        case Some(name) =>
-          for
-            _name <- Decoder.decodeList[Text].apply(name)
-            result <- NonEmptyList.fromList(_name).fold(decodingFailed(cursor))(Right apply Name(_))
-          yield result
-        case None => decodingFailed(cursor)
+      /** The supported name categories. */
+      case Person, Organization, Location

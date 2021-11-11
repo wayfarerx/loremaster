@@ -13,8 +13,18 @@
 package net.wayfarerx.loremaster
 package service
 
+import java.net.URI
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Path, Files}
+import java.nio.file.attribute.FileTime
 import java.time.Instant
-import zio.Task
+
+import scala.jdk.CollectionConverters.*
+
+import zio.{Has, RIO, Task}
+import zio.system.System
+
+import model.*
 
 /**
  * Definition of the storage service API.
@@ -33,9 +43,9 @@ trait Storage:
    * Returns the locations of the entries in this storage with the specified parent.
    *
    * @param parent The parent of the entries to return.
-   * @return The locations of the entries in this storage with thev specified parent.
+   * @return The locations of the entries in this storage with the specified parent.
    */
-  inline final def list(parent: Location): Task[Set[Location]] = list(Option(parent))
+  def list(parent: Location): Task[Set[Location]] = list(Option(parent))
 
   /**
    * Returns true if this storage contains an entry at the specified location.
@@ -91,20 +101,16 @@ trait Storage:
  */
 object Storage:
 
-  import zio.system.System
-  import zio.{Has, RIO}
-
-  import java.net.URI
-
   /** The live storage layer. */
   val live: zio.RLayer[System & Has[Configuration] & Has[Log.Factory], Has[Storage]] =
-    zio.ZLayer.fromEffect {
+    zio.ZLayer fromEffect {
       for
         system <- RIO.service[System.Service]
         config <- RIO.service[Configuration]
         logFactory <- RIO.service[Log.Factory]
         log <- logFactory(classOf[Storage].getSimpleName)
-        result <- apply(system, log, config.storage, config.zeitgeist)
+        storage <- Task(URI(config.storage))
+        result <- apply(system, log, storage, config.zeitgeist)
       yield result
     }
 
@@ -120,26 +126,14 @@ object Storage:
    *
    * @param system    The system service.
    * @param log       The log service to use.
-   * @param uri       The URI that points to the home of the storage space.
+   * @param storage   The URI that points to the home of the storage space.
    * @param zeitgeist The zeitgeist that the storage will operate in.
    * @return A storage instance for the specified URI.
    */
-  def apply(system: System.Service, log: Log, uri: String, zeitgeist: String): Task[Storage] =
-    Task(URI(uri)) flatMap (apply(system, log, _, zeitgeist))
-
-  /**
-   * Creates a storage instance for the specified URI.
-   *
-   * @param system    The system service.
-   * @param log       The log service to use.
-   * @param uri       The URI that points to the home of the storage space.
-   * @param zeitgeist The zeitgeist that the storage will operate in.
-   * @return A storage instance for the specified URI.
-   */
-  def apply(system: System.Service, log: Log, uri: URI, zeitgeist: String): Task[Storage] =
-    val scheme = Option(uri) flatMap (Option apply _.getScheme) filterNot (_.isEmpty) getOrElse Local.Scheme
+  def apply(system: System.Service, log: Log, storage: URI, zeitgeist: String): Task[Storage] =
+    val scheme = Option(storage) flatMap (Option apply _.getScheme) filterNot (_.isEmpty) getOrElse Local.Scheme
     factories.get(scheme.toLowerCase).fold(fail(s"Invalid Storage scheme: $scheme.")) {
-      _ (system, log, uri, if zeitgeist.isEmpty then "default" else zeitgeist.toLowerCase)
+      _ (system, log, storage, if zeitgeist.isEmpty then "default" else zeitgeist.toLowerCase)
     }
 
   /**
@@ -209,14 +203,11 @@ object Storage:
   /**
    * Deletes an entry from the storage.
    *
-   * @param name The name of the entry to delete.
+   * @param location The location of the entry to delete.
    * @return The result of attempting to delete an entry from the storage.
    */
   inline def delete(location: Location): RIO[Has[Storage], Unit] =
     RIO.service flatMap (_.delete(location))
-
-  import java.nio.file.Path
-  import scala.jdk.CollectionConverters.*
 
   /**
    * A storage service that uses the local filesystem.
@@ -243,8 +234,10 @@ object Storage:
     yield result
 
     /* Return true if this storage contains an entry at the specified locations. */
-    override def exists(location: Location) =
-      resolve(location) flatMap (pathExists(_))
+    override def exists(location: Location) = for
+      resolved <- resolve(location)
+      existing <- pathExists(resolved)
+    yield existing
 
     /* Return the instant that the specified entry was last modified if it exists. */
     override def lastModified(location: Location) = for
@@ -282,7 +275,7 @@ object Storage:
       _ <- if !directory then deletePath(path) else for
         children <- childrenOf(path)
         _ <- if children.isEmpty then deletePath(path) else
-          fail(s"Cannot delete non-empty directory from Storage: ${location.encoded}/.")
+          fail(s"Cannot delete non-empty directory from Storage: $location/.")
       yield ()
     yield ()
 
@@ -293,27 +286,23 @@ object Storage:
      * @return A storage path resolved from a location.
      */
     inline private def resolve(location: Location): Task[Path] =
-      Task(root.resolve(Path.of(location.head.encoded, location.tail.map(_.encoded): _*)))
+      Task(root.resolve(Path.of(location.head.value, location.tail.map(_.value): _*)))
 
     /**
-     * Reletivizes a location from a storage path.
+     * Relativizes a location from a storage path.
      *
-     * @param path The storage path to reletivize a location from.
-     * @return A location reletivized from a storage path.
+     * @param path The storage path to relativize a location from.
+     * @return A location relativized from a storage path.
      */
     inline private def relativize(path: Path): Task[Location] = for
       relativized <- Task(root.relativize(path))
-      result <- Location(relativized.toString)
+      result <- Location.create(relativized.toString)
     yield result
 
   /**
    * Factory for local storage services.
    */
   private object Local:
-
-    import java.nio.charset.StandardCharsets.UTF_8
-    import java.nio.file.Files
-    import java.nio.file.attribute.FileTime
 
     /** The URI scheme that designates the local implementation. */
     val Scheme = "file"
@@ -352,7 +341,7 @@ object Storage:
     inline private def pathExists(path: Path) =
       Task(Files.exists(path))
 
-    /** Returns the instant that the specified path was last modififed. */
+    /** Returns the instant that the specified path was last modified. */
     inline private def getPathLastModified(path: Path) =
       Task(Files.getLastModifiedTime(path)) map (_.toInstant)
 

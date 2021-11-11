@@ -9,6 +9,7 @@ lazy val root = project.in(file(".")).settings(
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores"),
 
   libraryDependencies ++= Seq(
+    Caffeine,
     CirceCore,
     CirceGeneric,
     CirceParser,
@@ -20,6 +21,7 @@ lazy val root = project.in(file(".")).settings(
     Slf4jApi,
     SttpZio,
     Zio,
+    ZioCache,
     ZioTest,
     ZioTestSbt
   ),

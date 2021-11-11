@@ -13,8 +13,22 @@
 package net.wayfarerx.loremaster
 package service
 
-import zio.Task
-import model.Book
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.duration.*
+import scala.jdk.CollectionConverters.*
+
+import cats.data.NonEmptyList
+
+import org.jsoup.Jsoup
+import org.jsoup.nodes.{Document, Element}
+import org.jsoup.select.Elements
+
+import zio.{Has, Ref, RIO, Task, UIO, ZIO}
+import zio.clock.Clock
+
+import model.*
 
 /**
  * Definition of the zeitgeist service API.
@@ -37,16 +51,10 @@ trait Zeitgeist:
  */
 object Zeitgeist:
 
-  import java.time.Instant
-  import java.util.concurrent.TimeUnit
-  import scala.concurrent.duration.*
-  import zio.clock.Clock
-  import zio.{Has, Ref, RIO, UIO, ZIO}
-
   /** The base storage ID for use by zeitgeist implementations. */
   val ZeitgeistId: ID = id"zeitgeist"
 
-  /** The storage prefix for zeitegist implementations. */
+  /** The storage prefix for zeitgeist implementations. */
   val Prefix: Location = Location.of(ZeitgeistId)
 
   /** The live zeitgeist layer. */
@@ -59,20 +67,21 @@ object Zeitgeist:
         log <- logFactory(classOf[Zeitgeist].getSimpleName)
         storage <- RIO.service[Storage]
         https <- RIO.service[Https]
-        result <- apply(
+        zeitgeist <- apply(
           configuration.zeitgeist,
           clock,
           log,
           storage,
           https,
-          configuration.cacheExpiration,
+          configuration.remoteCacheExpiration,
           configuration.remoteCooldown
         )
-      yield result
+      yield zeitgeist
     }
 
   /** The supported zeitgeist factories. */
-  private val factories: Map[String, (Clock.Service, Log, Storage, Https, FiniteDuration, FiniteDuration, Ref[Instant]) => Zeitgeist] =
+  private val factories:
+    Map[String, (Clock.Service, Log, Storage, Https, FiniteDuration, FiniteDuration, Ref[Instant]) => Zeitgeist] =
     Map(TesImperialLibrary.Designator.toLowerCase -> TesImperialLibrary)
 
   /**
@@ -121,8 +130,6 @@ object Zeitgeist:
    */
   trait Website extends Zeitgeist :
 
-    import java.util.concurrent.atomic.AtomicReference
-
     /** The clock service to use. */
     protected def clock: Clock.Service
 
@@ -153,13 +160,10 @@ object Zeitgeist:
     /** The prefix of URIs that point to this website. */
     protected final lazy val prefix = s"https://$host/"
 
-    /** The checkpoint to consult when cooling down remote requests. */
-    private val checkpoint = AtomicReference(Instant.MIN)
-
     /* The lore locations that this zeitgeist provides. */
     final override val list: Task[Map[ID, Location]] = for
       webpage <- materialize(index)
-      results <- webpage.fold(fail(s"Failed to materialize zeitgeist index: ${index.encoded}"))(parseIndex)
+      results <- webpage.fold(fail(s"Failed to materialize zeitgeist index: $index"))(parseIndex)
     yield results.foldLeft(Map.empty[ID, Location]) { (map, result) =>
       val reversed = result.reverse
       index(map, result, List(reversed.head), reversed.tail)
@@ -196,7 +200,7 @@ object Zeitgeist:
      */
     private def materialize(location: Location): Task[Option[String]] =
       val cached = Prefix :++ {
-        if location.last.encoded endsWith ".html" then location
+        if location.last.value endsWith ".html" then location
         else location :+ id"index.html"
       }
       for
@@ -284,7 +288,7 @@ object Zeitgeist:
       candidate: List[ID],
       remaining: List[ID]
     ): Map[ID, Location] =
-      ID.decode(candidate mkString "__") match {
+      ID.fromString(candidate mkString "__") match {
         case Some(id) if !map.contains(id) => map + (id -> location)
         case _ => index(map, location, remaining.head :: candidate, remaining.tail)
       }
@@ -310,38 +314,25 @@ object Zeitgeist:
     previousCompletionAt: Ref[Instant]
   ) extends Website :
 
-    import scala.jdk.CollectionConverters.*
-    import cats.data.NonEmptyList
-    import org.jsoup.Jsoup
-    import org.jsoup.nodes.{Document, Element}
-    import org.jsoup.select.Elements
-    import TesImperialLibrary.*
-
     /* The host to connect to. */
-    override protected def host = Host
+    override protected def host: String = TesImperialLibrary.Host
 
     /* The location of the index document. */
-    override protected def index = Index
+    override protected def index: Location = TesImperialLibrary.Index
 
     /* Parse a webpage into a collection of locations. */
-    override protected def parseIndex(webpage: String) = for
+    override protected def parseIndex(webpage: String): Task[Set[Location]] = for
       document <- parse(index, webpage)
       results <- allResults(document, ".views-field-title a[href]") { element =>
         Option(element attr "abs:href") collect {
-          case prefixed if prefixed startsWith prefix => prefixed drop prefix.size
-        } flatMap Location.decode
+          case prefixed if prefixed startsWith prefix => prefixed drop prefix.length
+        } flatMap (Location.decode(_))
       }
     yield results
 
     /* Parse a webpage into lore. */
-    override protected def parseBook(at: Location, webpage: String) = for
+    override protected def parseBook(at: Location, webpage: String): Task[Option[Book]] = for
       document <- parse(at, webpage)
-      title <- firstResult(document, "#main .page-title") { element =>
-        Option(element.text) filterNot (_.isEmpty)
-      }
-      author <- firstResult(document, "#content .field-field-author .field-item") { element =>
-        Option(element.ownText.trim) filterNot (_.isEmpty)
-      }
       content <- firstResult(document, "#content .prose") { element =>
         Option(element.children) map { children =>
           children.iterator.asScala flatMap { child =>
@@ -351,7 +342,7 @@ object Zeitgeist:
           }
         } filterNot (_.isEmpty)
       }
-    yield NonEmptyList fromList content.fold(Nil)(_.toList) map (Book(title, author, _))
+    yield NonEmptyList fromList content.fold(Nil)(_.toList)
 
     /**
      * Parses the document at a location.
@@ -361,7 +352,7 @@ object Zeitgeist:
      * @return The parsed document.
      */
     private def parse(location: Location, webpage: String): Task[Document] =
-      Task(Jsoup.parse(webpage, s"$prefix${location.encoded}/"))
+      Task(Jsoup.parse(webpage, s"$prefix$location/"))
 
     /**
      * Returns the first result of a CSS query.

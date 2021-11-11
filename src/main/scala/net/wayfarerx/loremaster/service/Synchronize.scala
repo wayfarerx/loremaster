@@ -13,7 +13,13 @@
 package net.wayfarerx.loremaster
 package service
 
-import zio.Task
+import java.time.Instant
+
+import scala.collection.immutable.SortedSet
+
+import zio.{Has, RIO, Task, UIO}
+
+import model.*
 
 /**
  * Definition of the synchronize service API.
@@ -32,17 +38,11 @@ trait Synchronize:
  */
 object Synchronize:
 
-  import java.time.Instant
-  import java.util.concurrent.TimeUnit
-  import scala.concurrent.duration.FiniteDuration
-  import zio.{Has, RIO, UIO}
-  import model._
-
   /** The live synchronize layer. */
   val live: zio.RLayer[
     Has[Configuration] & Has[Log.Factory] & Has[Zeitgeist] & Has[Analysis] & Has[Library],
     Has[Synchronize]
-  ] = zio.ZLayer.fromEffect {
+  ] = zio.ZLayer fromEffect {
     for
       configuration <- RIO.service[Configuration]
       logFactory <- RIO.service[Log.Factory]
@@ -83,7 +83,6 @@ object Synchronize:
    * The live synchronize implementation.
    *
    * @param limit     The maximum number of entries to download in a single pass.
-   * @param clock     The clock service to use.
    * @param log       The log to append to.
    * @param zeitgeist The zeitgeist to pull from.
    * @param analysis  The analysis service to use.
@@ -97,7 +96,6 @@ object Synchronize:
     library: Library
   ) extends Synchronize :
 
-    import collection.immutable.SortedSet
     import Live._
 
     /* Synchronize the content of the zeitgeist on to the library. */
@@ -127,7 +125,7 @@ object Synchronize:
         if iterator.hasNext then
           val (id, location) = iterator.next
           for
-            _ <- log.debug(s"Creating library entry ${id.encoded}.")
+            _ <- log.debug(s"Creating library entry $id.")
             head <- sync(id, location)
             tail <- createInLibrary(iterator)
           yield head || tail
@@ -157,7 +155,7 @@ object Synchronize:
         if iterator.hasNext then
           val candidate = iterator.next
           for
-            _ <- log.debug(s"Updating library entry ${candidate.id.encoded}.")
+            _ <- log.debug(s"Updating library entry ${candidate.id}.")
             head <- sync(candidate.id, candidate.location)
             tail <- updateInLibrary(iterator)
           yield head || tail
@@ -180,7 +178,7 @@ object Synchronize:
         if iterator.hasNext then
           val id = iterator.next
           for
-            _ <- log.debug(s"Deleting library entry ${id.encoded}.")
+            _ <- log.debug(s"Deleting library entry $id.")
             exists <- library.exists(id)
             head <- if exists then library.delete(id) map (_ => true) else pure(false)
             tail <- deleteFromLibrary(iterator)

@@ -14,8 +14,13 @@ package net.wayfarerx.loremaster
 package service
 
 import java.time.Instant
-import zio.Task
-import model.Lore
+
+import cats.data.NonEmptyList
+
+import zio.{Has, RIO, Task}
+
+import model.*
+import json.given
 
 /**
  * Definition of the library service API.
@@ -51,7 +56,7 @@ trait Library:
    * @param id           The ID of the lore to touch.
    * @param lastModified The instant to set as the last modified time.
    */
-  def touch(id: ID, lastModified: Instant): Task[Unit]
+  def touch(id: ID, lastModified: Instant = Instant.now): Task[Unit]
 
   /**
    * Loads the lore with the specified ID.
@@ -81,32 +86,20 @@ trait Library:
  */
 object Library:
 
-  import zio.{Has, RIO}
-
-  /** The base storage ID for use by library implementations. */
-  val LibraryId: ID = id"library"
-
-  /** The storage prefix for live library implementations. */
-  val Prefix: Location = Location.of(LibraryId)
+  /** The base storage prefix used bya library implementations. */
+  val Prefix: ID = id"library"
 
   /** The live library layer. */
-  val live: zio.RLayer[Has[Log.Factory] & Has[Storage], Has[Library]] =
-    zio.ZLayer.fromEffect {
-      for
-        logFactory <- RIO.service[Log.Factory]
-        log <- logFactory(classOf[Library].getSimpleName)
-        storage <- RIO.service[Storage]
-      yield apply(log, storage)
-    }
+  val live: zio.RLayer[Has[Storage], Has[Library]] =
+    zio.ZLayer fromEffect (RIO.service[Storage] map apply)
 
   /**
    * Creates a library service that uses the specified storage.
    *
-   * @param log     The log to append to.
    * @param storage The storage to use.
    * @return A library service that uses the specified storage.
    */
-  def apply(log: Log, storage: Storage): Library = Live(log, storage)
+  def apply(storage: Storage): Library = Live(storage)
 
   /**
    * Lists the IDs of the lore the library contains.
@@ -172,77 +165,69 @@ object Library:
   /**
    * The live library implementation.
    *
-   * @param log     The log to append to.
    * @param storage The storage to use.
    */
-  private case class Live(log: Log, storage: Storage) extends Library :
+  private case class Live(storage: Storage) extends Library :
 
-    import io.circe.generic.auto.*
-    import io.circe.parser.decode
-    import io.circe.syntax.*
     import Live.*
 
     /* List the IDs of the lore this library contains. */
     override def list =
-      for children <- storage.list(Prefix) yield
-        children.iterator.map(_.last.encoded).flatMap { encoded =>
-          if (encoded endsWith Suffix) ID.decode(encoded dropRight Suffix.length) else None
-        }.toSet
+      storage list Location.of(Prefix) map (_ flatMap fromStorageLocation)
 
     /* Return true if this library contains lore with the specified ID. */
-    override def exists(id: ID): Task[Boolean] = for
-      storageId <- toStorageId(id)
-      result <- storage.exists(Prefix :+ storageId)
-    yield result
+    override def exists(id: ID): Task[Boolean] =
+      toStorageLocation(id).fold(pure(false))(storage.exists)
 
     /* Return the instant that the specified lore was last modified if it exists. */
-    override def lastModified(id: ID): Task[Option[Instant]] = for
-      storageId <- toStorageId(id)
-      result <- storage.lastModified(Prefix :+ storageId)
-    yield result
+    override def lastModified(id: ID): Task[Option[Instant]] =
+      toStorageLocation(id).fold(none)(storage.lastModified)
 
     /* Update the last modified instant of the specified lore if it exists. */
-    override def touch(id: ID, lastModified: Instant): Task[Unit] = for
-      storageId <- toStorageId(id)
-      _ <- storage.touch(Prefix :+ storageId, lastModified)
-    yield ()
+    override def touch(id: ID, lastModified: Instant): Task[Unit] =
+      toStorageLocation(id).fold(fail(s"Failed to touch $id in the library."))(storage.touch(_, lastModified))
 
     /* Load the lore with the specified ID. */
-    override def load(id: ID) = for
-      storageId <- toStorageId(id)
-      result <- for
-        json <- storage.load(Prefix :+ storageId)
-        loaded <- json.fold(none)(decode[Lore](_).fold(fail(s"Failed to parse lore: ${id.encoded}", _), some))
-      yield loaded
-    yield result
+    override def load(id: ID) =
+      toStorageLocation(id).fold(fail(s"Failed to load $id from the library.")) {
+        storage load _ flatMap (_.fold(none)(json.parse[Lore](_) map Some.apply))
+      }
 
     /* Save a lore using the specified ID. */
-    override def save(id: ID, lore: Lore) = for
-      storageId <- toStorageId(id)
-      _ <- storage.save(Prefix :+ storageId, lore.asJson.spaces2)
-    yield ()
+    override def save(id: ID, lore: Lore) =
+      toStorageLocation(id).fold(fail(s"Failed to save $id to the library.")) { location =>
+        json emit lore flatMap (storage.save(location, _))
+      }
 
     /* Delete the lore with the specified ID. */
-    override def delete(id: ID) = for
-      storageId <- toStorageId(id)
-      _ <- storage.delete(Prefix :+ storageId)
-    yield ()
+    override def delete(id: ID) =
+      toStorageLocation(id).fold(fail(s"Failed to delete $id from the library."))(storage.delete)
 
   /**
    * Factory for live library services.
    */
-  private object Live extends ((Log, Storage) => Live) :
-
-    import cats.data.NonEmptyList
+  private object Live extends (Storage => Live) :
 
     /** The storage suffix used by live implementations. */
-    val Suffix: String = ".json"
+    private[this] val Suffix: String = ".json"
 
     /**
-     * Converts a Library ID into a Storage ID.
+     * Extracts a library ID from a storage location.
      *
-     * @param id The Library ID to convert into a Storage ID.
-     * @return The Storage ID derived from the specified Library ID.
+     * @param storageLocation The storage location to extract a library ID from.
+     * @return The library ID extracted from the specified storage location.
      */
-    def toStorageId(id: ID): Task[ID] =
-      ID.decode(id.encoded + Suffix).fold(fail(s"Invalid Library ID: ${id.encoded}."))(pure)
+    private def fromStorageLocation(storageLocation: Location): Option[ID] =
+      if storageLocation.size == 2 && storageLocation.head == Prefix then
+        val last = storageLocation.last.value
+        if last endsWith Suffix then ID fromString last.dropRight(Suffix.length) else None
+      else None
+
+    /**
+     * Converts a library ID into a storage location.
+     *
+     * @param libraryId The library ID to convert into a storage location.
+     * @return The storage location derived from the specified library ID.
+     */
+    private def toStorageLocation(libraryId: ID): Option[Location] =
+      ID fromString libraryId.value + Suffix map (Location.of(Prefix, _))

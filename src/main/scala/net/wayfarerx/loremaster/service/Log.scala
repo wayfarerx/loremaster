@@ -13,7 +13,9 @@
 package net.wayfarerx.loremaster
 package service
 
-import zio.{Task, UIO}
+import org.slf4j.{Logger, LoggerFactory}
+
+import zio.{Has, Task, TaskLayer, UIO, URIO, ZLayer}
 
 /**
  * Definition of the log service API.
@@ -26,7 +28,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  def trace(message: => String, thrown: Option[Throwable] = None): UIO[Unit]
+  def trace(message: => String, thrown: => Option[Throwable] = None): UIO[Unit]
 
   /**
    * Creates a trace-level log entry.
@@ -34,7 +36,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  inline final def trace(message: => String, thrown: Throwable): UIO[Unit] = trace(message, Option(thrown))
+  def trace(message: => String, thrown: Throwable): UIO[Unit] = trace(message, Option(thrown))
 
   /**
    * Creates a debug-level log entry.
@@ -42,7 +44,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  def debug(message: => String, thrown: Option[Throwable] = None): UIO[Unit]
+  def debug(message: => String, thrown: => Option[Throwable] = None): UIO[Unit]
 
   /**
    * Creates a debug-level log entry.
@@ -50,7 +52,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  inline final def debug(message: => String, thrown: Throwable): UIO[Unit] = debug(message, Option(thrown))
+  def debug(message: => String, thrown: Throwable): UIO[Unit] = debug(message, Option(thrown))
 
   /**
    * Creates an info-level log entry.
@@ -58,7 +60,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  def info(message: => String, thrown: Option[Throwable] = None): UIO[Unit]
+  def info(message: => String, thrown: => Option[Throwable] = None): UIO[Unit]
 
   /**
    * Creates an info-level log entry.
@@ -66,7 +68,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  inline final def info(message: => String, thrown: Throwable): UIO[Unit] = info(message, Option(thrown))
+  def info(message: => String, thrown: Throwable): UIO[Unit] = info(message, Option(thrown))
 
   /**
    * Creates a warn-level log entry.
@@ -74,7 +76,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  def warn(message: => String, thrown: Option[Throwable] = None): UIO[Unit]
+  def warn(message: => String, thrown: => Option[Throwable] = None): UIO[Unit]
 
   /**
    * Creates a warn-level log entry.
@@ -82,7 +84,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  inline final def warn(message: => String, thrown: Throwable): UIO[Unit] = warn(message, Option(thrown))
+  def warn(message: => String, thrown: Throwable): UIO[Unit] = warn(message, Option(thrown))
 
   /**
    * Creates an error-level log entry.
@@ -90,7 +92,7 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  def error(message: => String, thrown: Option[Throwable] = None): UIO[Unit]
+  def error(message: => String, thrown: => Option[Throwable] = None): UIO[Unit]
 
   /**
    * Creates an error-level log entry.
@@ -98,16 +100,12 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  inline final def error(message: => String, thrown: Throwable): UIO[Unit] = error(message, Option(thrown))
+  def error(message: => String, thrown: Throwable): UIO[Unit] = error(message, Option(thrown))
 
 /**
  * Definitions associated with log services.
  */
 object Log:
-  log =>
-
-  import org.slf4j.Logger
-  import zio.{Has, URIO}
 
   /**
    * Creates a log service that uses the specified logger.
@@ -123,7 +121,7 @@ object Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  inline def trace(message: => String, thrown: Option[Throwable] = None): URIO[Has[Log], Unit] =
+  inline def trace(message: => String, thrown: => Option[Throwable] = None): URIO[Has[Log], Unit] =
     URIO.service flatMap (_.trace(message, thrown))
 
   /**
@@ -133,7 +131,7 @@ object Log:
    * @param thrown  The exception to log.
    */
   inline def trace(message: => String, thrown: Throwable): URIO[Has[Log], Unit] =
-    URIO.service flatMap (_.trace(message, Option(thrown)))
+    URIO.service flatMap (_.trace(message, thrown))
 
   /**
    * Creates a debug-level log entry.
@@ -141,7 +139,7 @@ object Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  inline def debug(message: => String, thrown: Option[Throwable] = None): URIO[Has[Log], Unit] =
+  inline def debug(message: => String, thrown: => Option[Throwable] = None): URIO[Has[Log], Unit] =
     URIO.service flatMap (_.debug(message, thrown))
 
   /**
@@ -151,7 +149,7 @@ object Log:
    * @param thrown  The exception to log.
    */
   inline def debug(message: => String, thrown: Throwable): URIO[Has[Log], Unit] =
-    URIO.service flatMap (_.debug(message, Option(thrown)))
+    URIO.service flatMap (_.debug(message, thrown))
 
   /**
    * Creates an info-level log entry.
@@ -159,7 +157,7 @@ object Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  inline def info(message: => String, thrown: Option[Throwable] = None): URIO[Has[Log], Unit] =
+  inline def info(message: => String, thrown: => Option[Throwable] = None): URIO[Has[Log], Unit] =
     URIO.service flatMap (_.info(message, thrown))
 
   /**
@@ -169,7 +167,7 @@ object Log:
    * @param thrown  The exception to log.
    */
   inline def info(message: => String, thrown: Throwable): URIO[Has[Log], Unit] =
-    URIO.service flatMap (_.info(message, Option(thrown)))
+    URIO.service flatMap (_.info(message, thrown))
 
   /**
    * Creates a warn-level log entry.
@@ -177,7 +175,7 @@ object Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  inline def warn(message: => String, thrown: Option[Throwable] = None): URIO[Has[Log], Unit] =
+  inline def warn(message: => String, thrown: => Option[Throwable] = None): URIO[Has[Log], Unit] =
     URIO.service flatMap (_.warn(message, thrown))
 
   /**
@@ -187,7 +185,7 @@ object Log:
    * @param thrown  The exception to log.
    */
   inline def warn(message: => String, thrown: Throwable): URIO[Has[Log], Unit] =
-    URIO.service flatMap (_.warn(message, Option(thrown)))
+    URIO.service flatMap (_.warn(message, thrown))
 
   /**
    * Creates an error-level log entry.
@@ -195,7 +193,7 @@ object Log:
    * @param message The message to log.
    * @param thrown  The optional exception to log.
    */
-  inline def error(message: => String, thrown: Option[Throwable] = None): URIO[Has[Log], Unit] =
+  inline def error(message: => String, thrown: => Option[Throwable] = None): URIO[Has[Log], Unit] =
     URIO.service flatMap (_.error(message, thrown))
 
   /**
@@ -205,7 +203,7 @@ object Log:
    * @param thrown  The exception to log.
    */
   inline def error(message: => String, thrown: Throwable): URIO[Has[Log], Unit] =
-    URIO.service flatMap (_.error(message, Option(thrown)))
+    URIO.service flatMap (_.error(message, thrown))
 
   /**
    * The live log implementation.
@@ -215,29 +213,24 @@ object Log:
   private case class Live(logger: Logger) extends Log :
 
     /* Create a trace-level log entry. */
-    override def trace(message: => String, thrown: Option[Throwable]) =
-      if !logger.isTraceEnabled then unit else
-        UIO(thrown.fold(logger.trace(message))(logger.trace(message, _)))
+    override def trace(message: => String, thrown: => Option[Throwable]) =
+      if !logger.isTraceEnabled then unit else pure(thrown.fold(logger.trace(message))(logger.trace(message, _)))
 
     /* Create a debug-level log entry. */
-    override def debug(message: => String, thrown: Option[Throwable]) =
-      if !logger.isDebugEnabled then unit else
-        UIO(thrown.fold(logger.debug(message))(logger.debug(message, _)))
+    override def debug(message: => String, thrown: => Option[Throwable]) =
+      if !logger.isDebugEnabled then unit else pure(thrown.fold(logger.debug(message))(logger.debug(message, _)))
 
     /* Create an info-level log entry. */
-    override def info(message: => String, thrown: Option[Throwable]) =
-      if !logger.isInfoEnabled then unit else
-        UIO(thrown.fold(logger.info(message))(logger.info(message, _)))
+    override def info(message: => String, thrown: => Option[Throwable]) =
+      if !logger.isInfoEnabled then unit else pure(thrown.fold(logger.info(message))(logger.info(message, _)))
 
     /* Create a warn-level log entry. */
-    override def warn(message: => String, thrown: Option[Throwable]) =
-      if !logger.isWarnEnabled then unit else
-        UIO(thrown.fold(logger.warn(message))(logger.warn(message, _)))
+    override def warn(message: => String, thrown: => Option[Throwable]) =
+      if !logger.isWarnEnabled then unit else pure(thrown.fold(logger.warn(message))(logger.warn(message, _)))
 
     /* Create an error-level log entry. */
-    override def error(message: => String, thrown: Option[Throwable]) =
-      if !logger.isErrorEnabled then unit else
-        UIO(thrown.fold(logger.error(message))(logger.error(message, _)))
+    override def error(message: => String, thrown: => Option[Throwable]) =
+      if !logger.isErrorEnabled then unit else pure(thrown.fold(logger.error(message))(logger.error(message, _)))
 
   /**
    * Definition of the log factory service API.
@@ -249,21 +242,13 @@ object Log:
    */
   object Factory:
 
-    import zio.RIO
+    /** The global live log factory instance. */
+    private val Global: Task[Factory] = Task(LoggerFactory.getILoggerFactory).map { iLoggerFactory =>
+      (name => Task(iLoggerFactory getLogger name) map Log.apply): Factory
+    }.memoize.flatten
 
     /** The live log factory layer. */
-    val live: zio.TaskLayer[Has[Factory]] =
-      zio.ZLayer.fromEffect {
-        Task(org.slf4j.LoggerFactory.getILoggerFactory) map { factory =>
-          name => Task(factory.getLogger(name)) map (Log(_))
-        }
-      }
+    val live: TaskLayer[Has[Factory]] = ZLayer fromEffect apply()
 
-    /**
-     * Creates a log with the specified name.
-     *
-     * @param name The name of the log to create.
-     * @return A log with the specified name.
-     */
-    inline def apply(name: String): RIO[Has[Factory], Log] =
-      RIO.service flatMap (_ (name))
+    /** The live log factory effect. */
+    def apply(): Task[Factory] = Global

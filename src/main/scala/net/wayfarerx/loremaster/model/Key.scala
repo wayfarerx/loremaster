@@ -11,12 +11,38 @@
  */
 
 package net.wayfarerx.loremaster
-package service
+package model
 
+import zio.Task
+
+/**
+ * Base type for transition keys.
+ */
 sealed trait Key
 
+/**
+ * Definition of the transition keys.
+ */
 object Key:
 
-  case class Text(id: ID, pos: Option[ID]) extends Key
+  /** The ordering of targets. */
+  given Ordering[Key] = (x, y) => x match
+    case Start => y match
+      case From(_) => -1
+      case Start => 0
+    case From(xToken) => y match
+      case From(yToken) => Ordering[Token].compare(xToken, yToken)
+      case Start => 1
 
-  case class Name(id: ID) extends Key
+  /**
+   * The transition key that starts a sentence.
+   */
+  case object Start extends Key
+
+  /**
+   * A transition key that continues from specified token.
+   *
+   * @param token The token to continue from.
+   */
+  case class From(token: Token) extends Key
+

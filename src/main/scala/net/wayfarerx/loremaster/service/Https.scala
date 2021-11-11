@@ -13,8 +13,21 @@
 package net.wayfarerx.loremaster
 package service
 
-import java.time.Instant
-import zio.Task
+import java.time.{Instant, ZoneId, ZoneOffset}
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+import scala.concurrent.duration.*
+
+import sttp.capabilities.WebSockets
+import sttp.capabilities.zio.ZioStreams
+import sttp.client3.*
+import sttp.client3.httpclient.zio.HttpClientZioBackend
+import sttp.model.StatusCode
+
+import zio.{Has, RIO, RLayer, Task, ZLayer}
+
+import model.*
 
 /**
  * Definition of the HTTPS service API.
@@ -39,7 +52,7 @@ trait Https {
    * @param ifModifiedSince Only download if the resource was modified after the instant.
    * @return The content of the specified resource if it exists.
    */
-  inline final def get(host: String, location: Location, ifModifiedSince: Instant): Task[Https.Response] =
+  def get(host: String, location: Location, ifModifiedSince: Instant): Task[Https.Response] =
     get(host, location, Option(ifModifiedSince))
 
 }
@@ -49,31 +62,29 @@ trait Https {
  */
 object Https:
 
-  import sttp.client3.*
-  import zio.{Has, RIO}
-
-  import scala.concurrent.duration.*
-
   /** The live HTTPS layer. */
-  val live: zio.RLayer[Has[Configuration] & Has[Log.Factory], Has[Https]] =
-    zio.ZLayer.fromEffect {
-      for
-        config <- RIO.service[Configuration]
-        logFactory <- RIO.service[Log.Factory]
-        log <- logFactory(classOf[Https].getSimpleName)
-        result <- apply(config.connectionTimeout, log)
-      yield result
-    }
+  val live: RLayer[Has[Configuration] & Has[Log.Factory], Has[Https]] = ZLayer fromEffect {
+    for
+      config <- RIO.service[Configuration]
+      logFactory <- RIO.service[Log.Factory]
+      log <- logFactory(classOf[Https].getSimpleName)
+      https <-
+        val title = config.applicationTitle.replaceAll("\\s+", "")
+        val version = config.applicationVersion.replaceAll("\\s+", "")
+        apply(config.remoteConnectionTimeout, log, s"$title/$version")
+    yield https
+  }
 
   /**
    * Creates an HTTPS service that uses the specified configuration.
    *
    * @param connectionTimeout The length of the HTTPS request timeout.
    * @param log               The log to append to.
+   * @param userAgent         The user agent header to provide.
    * @return An HTTPS service that uses the specified configuration.
    */
-  def apply(connectionTimeout: FiniteDuration, log: Log): Task[Https] =
-    httpclient.zio.HttpClientZioBackend(SttpBackendOptions.connectionTimeout(connectionTimeout)) map (Live(_, log))
+  def apply(connectionTimeout: FiniteDuration, log: Log, userAgent: String): Task[Https] =
+    HttpClientZioBackend(SttpBackendOptions.connectionTimeout(connectionTimeout)) map (Live(_, log, userAgent))
 
   /**
    * Returns the content of the specified resource if it exists.
@@ -83,11 +94,7 @@ object Https:
    * @param ifModifiedSince Only download if the resource was modified after the instant.
    * @return The content of the specified resource if it exists.
    */
-  inline def get(
-    host: String,
-    location: Location,
-    ifModifiedSince: Option[Instant] = None
-  ): RIO[Has[Https], Response] =
+  inline def get(host: String, location: Location, ifModifiedSince: Option[Instant] = None): RIO[Has[Https], Response] =
     RIO.service flatMap (_.get(host, location, ifModifiedSince))
 
   /**
@@ -98,11 +105,7 @@ object Https:
    * @param ifModifiedSince Only download if the resource was modified after the instant.
    * @return The content of the specified resource if it exists.
    */
-  inline def get(
-    host: String,
-    location: Location,
-    ifModifiedSince: Instant
-  ): RIO[Has[Https], Response] =
+  inline def get(host: String, location: Location, ifModifiedSince: Instant): RIO[Has[Https], Response] =
     RIO.service flatMap (_.get(host, location, ifModifiedSince))
 
   /**
@@ -125,56 +128,45 @@ object Https:
     case class Content(text: String) extends Response
 
   /** The type of backend used by the live implementation. */
-  private type LiveBackend = SttpBackend[Task, sttp.capabilities.zio.ZioStreams with sttp.capabilities.WebSockets]
+  private type LiveBackend = SttpBackend[Task, ZioStreams with WebSockets]
 
   /**
    * The live HTTPS implementation.
    *
-   * @param backend The backend to use.
-   * @param log     The log to append to.
+   * @param backend   The backend to use.
+   * @param log       The log to append to.
+   * @param userAgent The user agent header to provide.
    */
-  private case class Live(backend: LiveBackend, log: Log) extends Https :
+  private case class Live(backend: LiveBackend, log: Log, userAgent: String) extends Https :
 
-    import Live.*
-    import sttp.model.StatusCode
+    /** The template request sent from this service. */
+    private val templateRequest = basicRequest.header("User-Agent", userAgent)
 
     /* Return the content of the specified resource if it exists. */
     override def get(host: String, location: Location, ifModifiedSince: Option[Instant]): Task[Response] =
-      val target = s"https://$host/${location.encoded}"
+      val target = s"https://$host/$location"
       for
-        request <- ifModifiedSince.fold(pure(basicRequest)) {
-          httpTimestamp(_) map (basicRequest.header("If-Modified-Since", _))
+        httpRequest <- ifModifiedSince.fold(pure(templateRequest)) { instant =>
+          for
+            utcInstant <- Task(instant atOffset ZoneOffset.UTC)
+            httpTimestamps <- Live.HttpTimestamps
+            httpInstant <- Task(httpTimestamps format utcInstant)
+          yield templateRequest.header("If-Modified-Since", httpInstant)
         }
-        response <- request.get(uri"$target").send(backend)
-        result <- response.code match
+        httpResponse <- httpRequest.get(uri"$target").send(backend)
+        result <- httpResponse.code match
           case StatusCode.NotFound => pure(Response.NotFound)
           case StatusCode.NotModified => pure(Response.NotModified)
-          case _ if response.isSuccess => pure(Response.Content(response.body getOrElse ""))
-          case code => fail(s"Unable to download $target: $code ${response.statusText}.")
+          case _ if httpResponse.isSuccess => pure(Response.Content(httpResponse.body getOrElse ""))
+          case code => fail(s"Unable to download $target: $code ${httpResponse.statusText}.")
       yield result
 
   /**
    * Factory for live https services.
    */
-  private object Live extends ((LiveBackend, Log) => Live) :
-
-    import java.time.format.DateTimeFormatter
-    import java.time.{ZoneId, ZoneOffset}
-    import java.util.Locale
+  private object Live extends ((LiveBackend, Log, String) => Live) :
 
     /** The memoized HTTP timestamp formatter. */
     private val HttpTimestamps = Task {
       DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH).withZone(ZoneId of "GMT")
     }.memoize.flatten
-
-    /**
-     * Returns the HTTP timestamp of the specified instant.
-     *
-     * @param instant The instant to convert.
-     * @return The HTTP timestamp of the specified instant.
-     */
-    inline private def httpTimestamp(instant: Instant): Task[String] = for
-      utc <- Task(instant atOffset ZoneOffset.UTC)
-      timestamps <- HttpTimestamps
-      result <- Task(timestamps format utc)
-    yield result
