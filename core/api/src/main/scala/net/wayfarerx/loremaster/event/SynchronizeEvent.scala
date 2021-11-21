@@ -1,4 +1,4 @@
-/* src.scala
+/* SynchronizeEvent.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,15 +11,29 @@
  */
 
 package net.wayfarerx.loremaster
+package event
 
-import cats.data.NonEmptyList
+import model.*
 
-import io.circe.{Decoder, Encoder}
+/**
+ * Base type for synchronize events.
+ */
+sealed trait SynchronizeEvent
 
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
+/**
+ * Definitions of the supported synchronize events.
+ */
+object SynchronizeEvent:
 
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
-  NonEmptyList.fromList(_) toRight "Failed to decode non-empty list from JSON."
-}
+  /**
+   * An event that indicates an update should occur.
+   */
+  case object Update extends SynchronizeEvent
+
+  /**
+   * An event that indicates the specified entry should be mirrored.
+   *
+   * @param id The ID of the entry to mirror.
+   * @param location The location of the entry to mirror.
+   */
+  case class Mirror(id: ID, location: Location) extends SynchronizeEvent

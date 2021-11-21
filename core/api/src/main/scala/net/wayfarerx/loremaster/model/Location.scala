@@ -10,14 +10,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.wayfarerx.loremaster
-package model
+package net.wayfarerx.loremaster.model
 
 import scala.math.Ordering.Implicits.given
 
 import cats.data.NonEmptyList
-
-import io.circe.{Decoder, Encoder}
 
 /**
  * Definition of the location type.
@@ -77,12 +74,6 @@ object Location extends (NonEmptyList[ID] => Location) :
 
   /** The ordering of locations. */
   given Ordering[Location] = Ordering.by(_.elements.toList)
-
-  /** The encoding of locations to JSON. */
-  given Encoder[Location] = Encoder[String] contramap (_.toString)
-
-  /** The decoding of locations from JSON. */
-  given Decoder[Location] = Decoder[String] emap (Location.decode(_) toRight "Failed to decode location from JSON.")
 
   /** The canonical separator character. */
   private val Separator = "/"

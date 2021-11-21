@@ -13,8 +13,6 @@
 package net.wayfarerx.loremaster
 package model
 
-import io.circe.{Decoder, Encoder}
-
 /**
  * Definition of the ID type.
  *
@@ -32,12 +30,6 @@ object ID:
 
   /** The ordering of IDs. */
   given Ordering[ID] = Ordering by (_.value)
-
-  /** The encoding of IDs to JSON. */
-  given Encoder[ID] = Encoder[String] contramap (_.toString)
-
-  /** The decoding of IDs from JSON. */
-  given Decoder[ID] = Decoder[String] emap (ID.decode(_) toRight "Failed to decode ID from JSON.")
 
   /** The dots that are not allowed to define IDs. */
   private[this] val Dots = Set('.')

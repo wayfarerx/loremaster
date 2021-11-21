@@ -13,48 +13,48 @@
 package net.wayfarerx.loremaster
 package model
 
-import scala.math.Ordering.Implicits.given
+import math.Ordering.Implicits.given
 
 import cats.data.NonEmptyList
 
-import io.circe.{Decoder, Encoder}
+import zio.Task
 
 /**
  * Definition of the location type.
  *
- * @param elements The non-empty list of IDs that define this location.
+ * @param value The non-empty list of IDs that define this location.
  */
-case class Location(elements: NonEmptyList[ID]):
+case class Location(value: NonEmptyList[ID]):
 
   /** The number of IDs in this location. */
-  def size: Int = elements.size
+  def size: Int = value.size
 
   /** The fist ID in this location. */
-  def head: ID = elements.head
+  def head: ID = value.head
 
   /** The non-first IDs in this location. */
-  def tail: List[ID] = elements.tail
+  def tail: List[ID] = value.tail
 
   /** The non-last IDs in this location. */
-  def init: List[ID] = elements.init
+  def init: List[ID] = value.init
 
   /** The last ID in this location. */
-  def last: ID = elements.last
+  def last: ID = value.last
 
   /** This location with the IDs in reverse order. */
-  def reverse: Location = Location(elements.reverse)
+  def reverse: Location = Location(value.reverse)
 
   /** Appends that ID to this location */
-  def :+(id: ID): Location = Location(elements :+ id)
+  def :+(id: ID): Location = Location(value :+ id)
 
   /** Prepends that ID to this location */
-  def +:(id: ID): Location = Location(id :: elements)
+  def +:(id: ID): Location = Location(id :: value)
 
   /** Appends that location to this location */
-  def :++(that: Location): Location = Location(elements ::: that.elements)
+  def :++(that: Location): Location = Location(value ::: that.value)
 
   /** Prepends that location to this location */
-  def ++:(that: Location): Location = Location(that.elements ::: elements)
+  def ++:(that: Location): Location = Location(that.value ::: value)
 
   /**
    * Appends the specified suffix to the last ID in this location.
@@ -63,12 +63,21 @@ case class Location(elements: NonEmptyList[ID]):
    * @return This location with the specified suffix appended to the last ID.
    */
   def appendToLast(suffix: String): Option[Location] = for
-    last <- ID.decode(elements.last.value + suffix)
-    result <- Location.from(elements.init :+ last)
+    last <- ID fromString value.last.value + suffix
+    result <- NonEmptyList fromList value.init :+ last map (Location(_))
   yield result
 
+  /**
+   * Appends the specified suffix to the last ID in this location.
+   *
+   * @param suffix The suffix to append to the last ID in this location.
+   * @return This location with the specified suffix appended to the last ID.
+   */
+  def appendedToLast(suffix: String): Task[Location] =
+    appendToLast(suffix).fold(fail(s"Cannot append suffix $suffix to location $toString."))(pure(_))
+
   /* Return a string representation of this location. */
-  override def toString: String = elements.iterator mkString Location.Separator
+  override def toString: String = value.iterator mkString Location.Separator
 
 /**
  * Factory for locations.
@@ -76,19 +85,13 @@ case class Location(elements: NonEmptyList[ID]):
 object Location extends (NonEmptyList[ID] => Location) :
 
   /** The ordering of locations. */
-  given Ordering[Location] = Ordering.by(_.elements.toList)
-
-  /** The encoding of locations to JSON. */
-  given Encoder[Location] = Encoder[String] contramap (_.toString)
-
-  /** The decoding of locations from JSON. */
-  given Decoder[Location] = Decoder[String] emap (Location.decode(_) toRight "Failed to decode location from JSON.")
+  given Ordering[Location] = Ordering.by(_.value.toList)
 
   /** The canonical separator character. */
   private val Separator = "/"
 
   /** A regex that matches sequences of separator characters. */
-  private[this] val Separators = """[/\\]+""".r
+  private val Separators = """[/\\]+""".r
 
   /**
    * Returns a location composed of the specified IDs.
@@ -106,8 +109,8 @@ object Location extends (NonEmptyList[ID] => Location) :
    * @param ids The ID sequence.
    * @return A location composed of the specified IDs.
    */
-  def from(ids: Iterable[ID]): Option[Location] =
-    ids.headOption map (of(_, ids.tail.toSeq *))
+  def from(ids: ID*): Option[Location] =
+    ids.headOption map (of(_, ids.tail *))
 
 
   /**
@@ -117,4 +120,13 @@ object Location extends (NonEmptyList[ID] => Location) :
    * @return A location decoded from zero or more values.
    */
   def decode(values: String*): Option[Location] =
-    from(values.iterator flatMap Separators.split flatMap ID.decode to Iterable)
+    NonEmptyList fromFoldable values.iterator.flatMap(Separators.split).flatMap(ID.fromString).toSeq map Location.apply
+
+  /**
+   * Creates a location from zero or more values.
+   *
+   * @param values The values to create a location from.
+   * @return A location created from zero or more values.
+   */
+  def create(values: String*): Task[Location] =
+    decode(values *).fold(fail(s"Invalid location: ${values mkString Separator}."))(pure(_))

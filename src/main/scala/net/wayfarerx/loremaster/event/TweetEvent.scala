@@ -1,4 +1,4 @@
-/* src.scala
+/* TweetEvent.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,15 +11,25 @@
  */
 
 package net.wayfarerx.loremaster
+package event
 
-import cats.data.NonEmptyList
+import model.*
 
 import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
+/**
+ * Definition of a tweet event.
+ */
+case class TweetEvent(book: Book)
 
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
-  NonEmptyList.fromList(_) toRight "Failed to decode non-empty list from JSON."
-}
+/**
+ * Factory for tweet events.
+ */
+object TweetEvent extends (Book => TweetEvent) :
+
+  /** The encoding of books to JSON. */
+  given Encoder[TweetEvent] = deriveEncoder
+
+  /** The decoding of books from JSON. */
+  given Decoder[TweetEvent] = deriveDecoder

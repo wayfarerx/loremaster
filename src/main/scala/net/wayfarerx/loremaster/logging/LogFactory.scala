@@ -1,4 +1,4 @@
-/* src.scala
+/* LogFactory.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,15 +11,29 @@
  */
 
 package net.wayfarerx.loremaster
+package logging
 
-import cats.data.NonEmptyList
+import scala.reflect.ClassTag
 
-import io.circe.{Decoder, Encoder}
+import zio.UIO
 
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
+/**
+ * Definition of the log factory API.
+ */
+trait LogFactory extends (String => UIO[Log]) :
 
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
-  NonEmptyList.fromList(_) toRight "Failed to decode non-empty list from JSON."
-}
+  /**
+   * Creates a log for the specified class.
+   *
+   * @param cls The class to create the log for.
+   * @return A log for the specified class.
+   */
+  def apply(cls: Class[_]): UIO[Log] = apply(cls.getSimpleName)
+
+  /**
+   * Creates a log for the specified type.
+   *
+   * @tparam T The type to create the log for.
+   * @return A log for the specified type.
+   */
+  inline final def log[T: ClassTag]: UIO[Log] = apply(summon[ClassTag[T]].runtimeClass)

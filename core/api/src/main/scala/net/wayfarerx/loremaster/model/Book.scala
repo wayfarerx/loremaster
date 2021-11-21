@@ -1,4 +1,4 @@
-/* src.scala
+/* Book.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,15 +11,13 @@
  */
 
 package net.wayfarerx.loremaster
+package model
 
 import cats.data.NonEmptyList
 
-import io.circe.{Decoder, Encoder}
-
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
-
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
-  NonEmptyList.fromList(_) toRight "Failed to decode non-empty list from JSON."
-}
+/**
+ * A non-empty list of paragraph strings.
+ *
+ * @param paragraphs The non-empty list of paragraph strings.
+ */
+case class Book(paragraphs: NonEmptyList[String])

@@ -13,7 +13,7 @@
 package net.wayfarerx.loremaster
 package model
 
-import io.circe.{Decoder, Encoder}
+import zio.Task
 
 /**
  * Definition of the ID type.
@@ -33,12 +33,6 @@ object ID:
   /** The ordering of IDs. */
   given Ordering[ID] = Ordering by (_.value)
 
-  /** The encoding of IDs to JSON. */
-  given Encoder[ID] = Encoder[String] contramap (_.toString)
-
-  /** The decoding of IDs from JSON. */
-  given Decoder[ID] = Decoder[String] emap (ID.decode(_) toRight "Failed to decode ID from JSON.")
-
   /** The dots that are not allowed to define IDs. */
   private[this] val Dots = Set('.')
 
@@ -51,5 +45,14 @@ object ID:
    * @param string The string to derive an ID from.
    * @return An ID derived from the specified string.
    */
-  def decode(string: String): Option[ID] =
+  def fromString(string: String): Option[ID] =
     if string.isEmpty || string.forall(Dots) || string.exists(Slashes) then None else Some(ID(string))
+
+  /**
+   * Creates an ID from a string.
+   *
+   * @param string The string to create the ID from.
+   * @return An ID created from the specified string.
+   */
+  def withString(string: String): Task[ID] =
+    fromString(string).fold(fail(s"Invalid ID string: $string."))(pure)
