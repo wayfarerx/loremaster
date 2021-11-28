@@ -39,7 +39,7 @@ final class AwsLogFactory(threshold: Log.Level, logger: LambdaLogger) extends Lo
   private[this] final class AwsLog(name: String) extends Log :
 
     /* Create a log entry at the specified level. */
-    override def apply(level: Log.Level, message: => String, thrown: => Option[Throwable]) =
+    override def apply(level: Log.Level, message: => String, thrown: => Option[Throwable]): UIO[Unit] =
       if level.ordinal < threshold.ordinal then UIO.unit else
         val cause = thrown map (t => s"${t.getClass.getSimpleName}(${Option(t.getMessage) getOrElse ""})")
         UIO(logger.log(s"$name: $message${cause.fold("")(c => s", caused by $c")}."))

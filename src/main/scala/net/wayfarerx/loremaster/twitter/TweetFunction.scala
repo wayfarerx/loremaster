@@ -1,4 +1,4 @@
-/* TweetPublisher.scala
+/* TweetFunction.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -17,20 +17,51 @@ import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent
 
-import zio.Task
+import zio.{Has, RIO, RLayer, Task, ZEnv, ZLayer}
 
 import aws.*
+import configuration.*
 import logging.*
+import model.*
 
-final class TweetFunction extends RequestHandler[KinesisEvent, Unit]:
+/**
+ * An AWS Kinesis Lambda function that posts books to Twitter,
+ */
+final class TweetFunction extends KinesisFunction[TweetFunction.Environment, Book](TweetFunction.Environment):
 
-  override def handleRequest(event: KinesisEvent, context: Context): Unit =
-    val logFactory = AwsLogFactory(Log.Level.Warn, context.getLogger) // FIXME configure log threshold
-    val publisher = TweetPublisher(logFactory, ???)
+  /* Publish the specified book to Twitter. */
+  override def apply(event: Book): RIO[TweetFunction.Environment, Unit] = for
+    log <- RIO.service[Log]
+    publisher <- RIO.service[TweetPublisher]
+    _ <- log.trace("Before handling tweet event")
+    _ <- publisher(event)
+    _ <- log.trace("After handling tweet event")
+  yield ()
 
-    def continue(records: List[KinesisEvent.KinesisEventRecord]): Task[Unit] = records match
-      case head :: tail => ???
-      case Nil => Task.unit
+object TweetFunction:
 
-    event.getRecords
+  type Environment = ZEnv & Has[Log] & Has[TweetPublisher]
+
+  private val Environment: RLayer[ZEnv & Has[Configuration] & Has[LogFactory], Environment] =
+    val log = ZLayer fromEffect RIO.service[LogFactory].flatMap(_.log[TweetFunction])
+    val credentials = ZLayer fromEffect {
+      for
+        config <- RIO.service[Configuration]
+        result <- TwitterCredentials(config)
+      yield result
+    }
+
+//    val credentials = ZLayer.requires[Has[Configuration]].flatMap {
+//      in => ???
+//    }
+//    val publisher = ZLayer.fromEffect {
+//      for
+//        config <- RIO.service[Configuration]
+//        logFactory <- RIO.service[LogFactory]
+//        log <- logFactory.log[TweetFunction]
+//        credentials <- config >>> TwitterCredentials.live
+//        publisher <- TweetPublisher(???, logFactory)
+//      yield ???
+//    }
+//    ZLayer.requires[ZEnv] ++ publisher
     ???

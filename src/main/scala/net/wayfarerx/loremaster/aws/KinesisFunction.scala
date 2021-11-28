@@ -13,29 +13,37 @@
 package net.wayfarerx.loremaster
 package aws
 
-import scala.jdk.CollectionConverters.*
+import java.nio.charset.StandardCharsets
 
-import com.amazonaws.services.lambda.runtime.Context
-import com.amazonaws.services.lambda.runtime.RequestHandler
+import scala.jdk.CollectionConverters.given
+
+import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent
 
 import io.circe.Decoder
+import io.circe.parser.decode
 
-import zio.Task
+import zio.{Has, RIO, RLayer, Runtime, Task, UIO, ZEnv, ZLayer}
 
 import configuration.*
 import logging.*
 
-import zio.{Has, RIO, Runtime, UIO, ZEnv, ZLayer}
+/**
+ * Base type for AWS Kinesis Lambda functions that operate in the specified environment.
+ *
+ * @tparam E The environment this Lambda function operates in.
+ * @tparam T The type of event this Lambda function handles.
+ * @param environment The environment constructor to use.
+ */
+abstract class KinesisFunction[E <: ZEnv, T: Decoder](
+  environment: RLayer[ZEnv & Has[Configuration] & Has[LogFactory], E] = ZLayer.identity
+) extends RequestHandler[KinesisEvent, Unit] :
 
-trait KinesisFunction[T: Decoder] extends RequestHandler[KinesisEvent, Unit] :
-
-  import KinesisFunction.*
-
+  /* Handle Lambda Kinesis events. */
   final override def handleRequest(event: KinesisEvent, context: Context): Unit =
-    Runtime.default unsafeRunTask handle(event.getRecords.iterator.asScala.toList).provideCustomLayer(
-      AwsConfiguration.live ++ (AwsConfiguration.live ++ ZLayer.succeed(context.getLogger) >>> AwsLogFactory.live)
-    )
+    Runtime.default unsafeRunTask handle(event.getRecords.iterator.asScala.toList).provideLayer {
+      ZLayer.requires[ZEnv] ++ ZLayer.succeed(context.getLogger) >>> KinesisFunction.LambdaLayer >>> environment
+    }
 
   /**
    * Handles events from the Kinesis stream.
@@ -43,10 +51,16 @@ trait KinesisFunction[T: Decoder] extends RequestHandler[KinesisEvent, Unit] :
    * @param events The events to handle.
    * @return A task that handles the specified events.
    */
-  private def handle(events: List[KinesisEvent.KinesisEventRecord]): RIO[LoremasterEnv, Unit] = events match {
-    case head :: tail => ???
-    case Nil => UIO.unit
-  }
+  private def handle(events: List[KinesisEvent.KinesisEventRecord]): RIO[E, Unit] = events match
+    case head :: tail =>
+      for
+        data <- Task(StandardCharsets.UTF_8.decode(head.getKinesis.getData).toString)
+        event <- Task.fromEither(decode[T](data))
+        _ <- apply(event)
+        _ <- handle(tail)
+      yield ()
+    case Nil =>
+      UIO.unit
 
   /**
    * Handles an event from the Kinesis stream.
@@ -54,9 +68,15 @@ trait KinesisFunction[T: Decoder] extends RequestHandler[KinesisEvent, Unit] :
    * @param event The event to handle.
    * @return A task that handles the specified event.
    */
-  def apply(event: T): RIO[LoremasterEnv, Unit]
+  def apply(event: T): RIO[E, Unit]
 
+/**
+ * Definitions associated with AWS Kinesis Lambda functions.
+ */
 object KinesisFunction:
 
-  type LoremasterEnv = ZEnv & Has[Configuration] & Has[LogFactory]
-
+  /** The layer provided to AWS Kinesis Lambda functions. */
+  private val LambdaLayer: RLayer[ZEnv & Has[LambdaLogger], ZEnv & Has[Configuration] & Has[LogFactory]] =
+    val config = AwsConfiguration.live
+    val logs = config ++ ZLayer.requires[Has[LambdaLogger]] >>> AwsLogFactory.live
+    ZLayer.requires[ZEnv] ++ config ++ logs

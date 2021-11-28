@@ -29,29 +29,26 @@ trait TweetPublisher extends (Book => Task[Unit])
 /**
  * Definitions associated with tweet publishers.
  */
-object TweetPublisher extends ((LogFactory, Credentials) => Task[TweetPublisher]) :
+object TweetPublisher extends ((TwitterCredentials, LogFactory) => Task[TweetPublisher]) :
 
   /**
    * Creates an implementation of the tweet publisher API.
    *
-   * @param logFactory  The log factory to use.
    * @param credentials The credentials to use when authenticating with Twitter.
+   * @param logFactory  The log factory to use.
    * @return An implementation of the tweet publisher API.
    */
-  override def apply(logFactory: LogFactory, credentials: Credentials): Task[TweetPublisher] = for
+  override def apply(credentials: TwitterCredentials, logFactory: LogFactory): Task[TweetPublisher] = for
     log <- logFactory.log[TweetPublisher]
-    _ <- log.trace("Before creating Twitter connection")
-    connection <- Task {
-      TwitterFactory {
-        ConfigurationBuilder()
-          .setOAuthConsumerKey(credentials.consumerKey)
-          .setOAuthConsumerSecret(credentials.consumerSecret)
-          .setOAuthAccessToken(credentials.accessToken)
-          .setOAuthAccessTokenSecret(credentials.accessTokenSecret)
-          .build
-      }.getInstance
-    }
-    _ <- log.trace("After creating Twitter connection")
+    _ <- log.trace(s"Before creating $Twitter connection")
+    connection <- Task apply TwitterFactory(ConfigurationBuilder()
+      .setOAuthConsumerKey(credentials.consumerKey)
+      .setOAuthConsumerSecret(credentials.consumerSecret)
+      .setOAuthAccessToken(credentials.accessToken)
+      .setOAuthAccessTokenSecret(credentials.accessTokenSecret)
+      .build
+    ).getInstance
+    _ <- log.trace(s"After creating $Twitter connection")
   yield book => for
     _ <- log.trace("Before publishing tweet")
     _ <- Task(connection.updateStatus(book.paragraphs.iterator mkString "\r\n" * 2))
