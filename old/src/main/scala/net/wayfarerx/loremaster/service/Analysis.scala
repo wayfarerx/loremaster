@@ -314,7 +314,7 @@ object Analysis:
           val prefix = remaining take start
           for
             _head <- NonEmptyList.fromList(remaining.slice(start, end)).fold(none) { tokens =>
-              Task(detokenizer.detokenize(tokens.iterator.map(_.string).toArray, " "))
+              Task(detokenizer.detokenize(tokens.iterator.map(_.text).toArray, " "))
                 .map(result => Option(result) filterNot (_.isEmpty))
             }
             _tail <- extractNames(cursor + end, remaining drop end, tail)

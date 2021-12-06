@@ -15,6 +15,7 @@ package model
 
 import scala.math.Ordering.Implicits.given
 
+import cats.Foldable
 import cats.data.NonEmptyList
 
 import io.circe.{Decoder, Encoder}
@@ -22,39 +23,39 @@ import io.circe.{Decoder, Encoder}
 /**
  * Definition of the location type.
  *
- * @param elements The non-empty list of IDs that define this location.
+ * @param path The non-empty list of IDs that define this location.
  */
-case class Location(elements: NonEmptyList[ID]):
+case class Location(path: NonEmptyList[ID]):
 
   /** The number of IDs in this location. */
-  def size: Int = elements.size
+  def size: Int = path.size
 
   /** The fist ID in this location. */
-  def head: ID = elements.head
+  def head: ID = path.head
 
   /** The non-first IDs in this location. */
-  def tail: List[ID] = elements.tail
+  def tail: List[ID] = path.tail
 
   /** The non-last IDs in this location. */
-  def init: List[ID] = elements.init
+  def init: List[ID] = path.init
 
   /** The last ID in this location. */
-  def last: ID = elements.last
+  def last: ID = path.last
 
   /** This location with the IDs in reverse order. */
-  def reverse: Location = Location(elements.reverse)
+  def reverse: Location = Location(path.reverse)
 
   /** Appends that ID to this location */
-  def :+(id: ID): Location = Location(elements :+ id)
+  def :+(id: ID): Location = Location(path :+ id)
 
   /** Prepends that ID to this location */
-  def +:(id: ID): Location = Location(id :: elements)
+  def +:(id: ID): Location = Location(id :: path)
 
   /** Appends that location to this location */
-  def :++(that: Location): Location = Location(elements ::: that.elements)
+  def :++(that: Location): Location = Location(path ::: that.path)
 
   /** Prepends that location to this location */
-  def ++:(that: Location): Location = Location(that.elements ::: elements)
+  def ++:(that: Location): Location = Location(that.path ::: path)
 
   /**
    * Appends the specified suffix to the last ID in this location.
@@ -62,13 +63,13 @@ case class Location(elements: NonEmptyList[ID]):
    * @param suffix The suffix to append to the last ID in this location.
    * @return This location with the specified suffix appended to the last ID.
    */
-  def appendToLast(suffix: String): Option[Location] = for
-    last <- ID.decode(elements.last.value + suffix)
-    result <- Location.from(elements.init :+ last)
+  def withSuffix(suffix: String): Option[Location] = for
+    suffixed <- ID decode path.last.value + suffix
+    result <- Location from path.init :+ suffixed
   yield result
 
   /* Return a string representation of this location. */
-  override def toString: String = elements.iterator mkString Location.Separator
+  override def toString: String = path.iterator mkString Location.Separator
 
 /**
  * Factory for locations.
@@ -76,13 +77,13 @@ case class Location(elements: NonEmptyList[ID]):
 object Location extends (NonEmptyList[ID] => Location) :
 
   /** The ordering of locations. */
-  given Ordering[Location] = Ordering.by(_.elements.toList)
+  given Ordering[Location] = Ordering by (_.path.toList)
 
   /** The encoding of locations to JSON. */
   given Encoder[Location] = Encoder[String] contramap (_.toString)
 
   /** The decoding of locations from JSON. */
-  given Decoder[Location] = Decoder[String] emap (Location.decode(_) toRight "Failed to decode location from JSON.")
+  given Decoder[Location] = Decoder[String] emap (path => decode(path) toRight Messages.invalidLocation(path))
 
   /** The canonical separator character. */
   private val Separator = "/"
@@ -91,30 +92,51 @@ object Location extends (NonEmptyList[ID] => Location) :
   private[this] val Separators = """[/\\]+""".r
 
   /**
-   * Returns a location composed of the specified IDs.
+   * Creates a location with a path of the specified IDs.
    *
-   * @param head The head of the ID sequence.
-   * @param tail The tail of the ID sequence.
-   * @return A location composed of the specified IDs.
+   * @param head The head ID of the path.
+   * @param tail The tail IDs of the path.
+   * @return A location with a path of the specified IDs.
    */
   def of(head: ID, tail: ID*): Location =
-    Location(NonEmptyList.of(head, tail *))
+    apply(NonEmptyList.of(head, tail *))
 
   /**
-   * Returns a location composed of the specified IDs.
+   * Creates a location with a path of the specified IDs.
    *
-   * @param ids The ID sequence.
-   * @return A location composed of the specified IDs.
+   * @tparam F The type of foldable ID collection.
+   * @param path The IDs of the path.
+   * @return A location with a path of the specified IDs.
    */
-  def from(ids: Iterable[ID]): Option[Location] =
-    ids.headOption map (of(_, ids.tail.toSeq *))
+  def from[F[_] : Foldable](path: F[ID]): Option[Location] =
+    NonEmptyList fromFoldable path map apply
 
 
   /**
-   * Decodes a location from zero or more values.
+   * Decodes a location from zero or more strings.
    *
-   * @param values The values to decode a location from.
-   * @return A location decoded from zero or more values.
+   * @param strings The strings to decode a location from.
+   * @return A location decoded from zero or more strings.
    */
-  def decode(values: String*): Option[Location] =
-    from(values.iterator flatMap Separators.split flatMap ID.decode to Iterable)
+  def decode(strings: String*): Option[Location] =
+    decoding(Vector.empty, strings.iterator.flatMap(Separators.split).filterNot(_.isEmpty).toList) map apply
+
+  /**
+   * Implementation of the string decoder.
+   *
+   * @param stack     The stack of IDs to decode into.
+   * @param remaining The remaining strings to decode.
+   * @return The decoded non-empty list of IDs.
+   */
+  @annotation.tailrec
+  private[this] def decoding(stack: Vector[ID], remaining: List[String]): Option[NonEmptyList[ID]] = remaining match
+    case "." :: tail =>
+      decoding(stack, tail)
+    case ".." :: tail =>
+      if stack.isEmpty then None
+      else decoding(stack.init, tail)
+    case head :: tail =>
+      ID decode head match
+        case Some(id) => decoding(stack :+ id, tail)
+        case None => None
+    case Nil => NonEmptyList fromFoldable stack

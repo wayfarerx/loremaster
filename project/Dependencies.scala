@@ -16,6 +16,10 @@ object Dependencies {
   lazy val CirceGeneric = CirceGroup %% "circe-generic" % CirceVersion
   lazy val CirceParser = CirceGroup %% "circe-parser" % CirceVersion
 
+  def ScalacticGroup = "org.scalactic"
+  def ScalacticVersion = "3.2.10"
+  lazy val Scalactic = ScalacticGroup %% "scalactic" % ScalacticVersion
+
   def ZioGroup = "dev.zio"
   def ZioVersion = "1.0.12"
   lazy val Zio = ZioGroup %% "zio" % ZioVersion
@@ -32,6 +36,12 @@ object Dependencies {
   def Twitter4jGroup = "org.twitter4j"
   def Twitter4jVersion = "4.0.7"
   lazy val Twitter4j = Twitter4jGroup % "twitter4j-core" % Twitter4jVersion
+
+  // Testing
+
+  def ScalaTestGroup = "org.scalatest"
+  def ScalaTestVersion = "3.2.10"
+  lazy val ScalaTest = ScalaTestGroup %% "scalatest" % ScalaTestVersion % "test"
 
   //
   //

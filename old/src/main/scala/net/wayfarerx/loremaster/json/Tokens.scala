@@ -43,10 +43,10 @@ private case object Tokens extends Codec[Token] :
   /* Encode the specified data into JSON. */
   override def encode(token: Token): Json = token match
     case text: Token.Text =>
-      val withString = Json obj STRING -> Json.fromString(text.string)
-      text.partOfSpeech.fold(withString)(pos => withString mapObject (_.add(PART_OF_SPEECH, Json fromString pos)))
+      val withString = Json obj STRING -> Json.fromString(text.text)
+      text.pos.fold(withString)(pos => withString mapObject (_.add(PART_OF_SPEECH, Json fromString pos)))
     case name: Token.Name => Json.obj(
-      TEXT -> Json.fromString(name.text),
+      TEXT -> Json.fromString(name.name),
       CATEGORY -> Json.fromString(name.category.toString.toLowerCase)
     )
 

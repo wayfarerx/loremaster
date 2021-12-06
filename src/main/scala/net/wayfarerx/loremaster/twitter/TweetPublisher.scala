@@ -51,6 +51,6 @@ object TweetPublisher extends ((TwitterCredentials, LogFactory) => Task[TweetPub
     _ <- log.trace(s"After creating $Twitter connection")
   yield book => for
     _ <- log.trace("Before publishing tweet")
-    _ <- Task(connection.updateStatus(book.paragraphs.iterator mkString "\r\n" * 2))
+    _ <- Task(connection.updateStatus(book.toString))
     _ <- log.trace("After publishing tweet")
   yield ()

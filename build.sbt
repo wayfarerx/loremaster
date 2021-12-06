@@ -14,11 +14,14 @@ lazy val root = project.in(file(".")).settings(
     CirceCore,
     CirceGeneric,
     CirceParser,
+    Scalactic,
     Zio,
     // AWS
     AwsLambdaCore,
     AwsLambdaEvents,
     // Tweeting
-    Twitter4j
+    Twitter4j,
+    // Testing
+    ScalaTest
   )
 )

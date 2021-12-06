@@ -42,7 +42,7 @@ abstract class KinesisFunction[E <: ZEnv, T: Decoder](
   /* Handle Lambda Kinesis events. */
   final override def handleRequest(event: KinesisEvent, context: Context): Unit =
     Runtime.default unsafeRunTask handle(event.getRecords.iterator.asScala.toList).provideLayer {
-      ZLayer.requires[ZEnv] ++ ZLayer.succeed(context.getLogger) >>> KinesisFunction.LambdaLayer >>> environment
+      ZLayer.requires[ZEnv] ++ ZLayer.succeed(context.getLogger) >>> KinesisFunction.HostLayer >>> environment
     }
 
   /**
@@ -76,7 +76,7 @@ abstract class KinesisFunction[E <: ZEnv, T: Decoder](
 object KinesisFunction:
 
   /** The layer provided to AWS Kinesis Lambda functions. */
-  private val LambdaLayer: RLayer[ZEnv & Has[LambdaLogger], ZEnv & Has[Configuration] & Has[LogFactory]] =
+  private val HostLayer: RLayer[ZEnv & Has[LambdaLogger], ZEnv & Has[Configuration] & Has[LogFactory]] =
     val config = AwsConfiguration.live
     val logs = config ++ ZLayer.requires[Has[LambdaLogger]] >>> AwsLogFactory.live
     ZLayer.requires[ZEnv] ++ config ++ logs

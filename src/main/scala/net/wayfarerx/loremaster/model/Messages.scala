@@ -1,4 +1,4 @@
-/* src.scala
+/* Messages.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,15 +11,26 @@
  */
 
 package net.wayfarerx.loremaster
+package model
 
-import cats.data.NonEmptyList
+/**
+ * The messages provided by the loremaster model.
+ */
+private object Messages {
 
-import io.circe.{Decoder, Encoder}
+  def invalidNonEmptyList(repr: String): String =
+    s"Unable to decode non-empty list from $repr"
 
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
+  def invalidId(repr: String): String =
+    s"Unable to decode ID from $repr"
 
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
-  NonEmptyList.fromList(_) toRight "Failed to decode non-empty list from JSON."
+  def invalidLocation(repr: String): String =
+    s"Unable to decode location from $repr"
+
+  def invalidToken(): String =
+    "Unable to decode token from JSON"
+
+  def invalidNameTokenCategory(repr: String): String =
+    s"Unable to decode name token category from $repr"
+
 }

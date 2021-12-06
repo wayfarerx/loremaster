@@ -34,10 +34,10 @@ object ID:
   given Ordering[ID] = Ordering by (_.value)
 
   /** The encoding of IDs to JSON. */
-  given Encoder[ID] = Encoder[String] contramap (_.toString)
+  given Encoder[ID] = Encoder[String] contramap (_.value)
 
   /** The decoding of IDs from JSON. */
-  given Decoder[ID] = Decoder[String] emap (ID.decode(_) toRight "Failed to decode ID from JSON.")
+  given Decoder[ID] = Decoder[String] emap (value => decode(value) toRight Messages.invalidId(value))
 
   /** The dots that are not allowed to define IDs. */
   private[this] val Dots = Set('.')
@@ -46,10 +46,11 @@ object ID:
   private[this] val Slashes = Set('/', '\\')
 
   /**
-   * Derives an ID from a string.
+   * Decodes an ID from a string.
    *
-   * @param string The string to derive an ID from.
-   * @return An ID derived from the specified string.
+   * @param string The string to decode an ID from.
+   * @return An ID decoded from the specified string.
    */
   def decode(string: String): Option[ID] =
-    if string.isEmpty || string.forall(Dots) || string.exists(Slashes) then None else Some(ID(string))
+    if string.isEmpty || string.forall(Dots) || string.exists(Slashes) then None
+    else Some(ID(string))

@@ -23,45 +23,39 @@ import aws.*
 import configuration.*
 import logging.*
 import model.*
+import event.TweetEvent
 
 /**
  * An AWS Kinesis Lambda function that posts books to Twitter,
  */
-final class TweetFunction extends KinesisFunction[TweetFunction.Environment, Book](TweetFunction.Environment):
+final class TweetFunction extends KinesisFunction[TweetFunction.Environment, TweetEvent](TweetFunction.Environment):
 
   /* Publish the specified book to Twitter. */
-  override def apply(event: Book): RIO[TweetFunction.Environment, Unit] = for
+  override def apply(event: TweetEvent): RIO[TweetFunction.Environment, Unit] = for
     log <- RIO.service[Log]
     publisher <- RIO.service[TweetPublisher]
     _ <- log.trace("Before handling tweet event")
-    _ <- publisher(event)
+    _ <- publisher(event.book)
     _ <- log.trace("After handling tweet event")
   yield ()
 
+/**
+ * Definitions associated with tweet functions.
+ */
 object TweetFunction:
 
+  /** The environment a tweet function operates in. */
   type Environment = ZEnv & Has[Log] & Has[TweetPublisher]
 
+  /** A factory for tweet function environments. */
   private val Environment: RLayer[ZEnv & Has[Configuration] & Has[LogFactory], Environment] =
     val log = ZLayer fromEffect RIO.service[LogFactory].flatMap(_.log[TweetFunction])
-    val credentials = ZLayer fromEffect {
+    val publisher = ZLayer fromEffect {
       for
         config <- RIO.service[Configuration]
-        result <- TwitterCredentials(config)
+        credentials <- TwitterCredentials(config)
+        logFactory <- RIO.service[LogFactory]
+        result <- TweetPublisher(credentials, logFactory)
       yield result
     }
-
-//    val credentials = ZLayer.requires[Has[Configuration]].flatMap {
-//      in => ???
-//    }
-//    val publisher = ZLayer.fromEffect {
-//      for
-//        config <- RIO.service[Configuration]
-//        logFactory <- RIO.service[LogFactory]
-//        log <- logFactory.log[TweetFunction]
-//        credentials <- config >>> TwitterCredentials.live
-//        publisher <- TweetPublisher(???, logFactory)
-//      yield ???
-//    }
-//    ZLayer.requires[ZEnv] ++ publisher
-    ???
+    ZLayer.requires[ZEnv] ++ log ++ publisher
