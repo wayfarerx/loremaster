@@ -41,7 +41,11 @@ object Dependencies {
 
   def ScalaTestGroup = "org.scalatest"
   def ScalaTestVersion = "3.2.10"
-  lazy val ScalaTest = ScalaTestGroup %% "scalatest" % ScalaTestVersion % "test"
+  lazy val ScalaTest = ScalaTestGroup %% "scalatest" % ScalaTestVersion % Test
+
+  def MockitoGroup = "org.scalatestplus"
+  def MockitoVersion = "3.2.10.0"
+  lazy val Mockito = MockitoGroup %% "mockito-3-4" % MockitoVersion % Test
 
   //
   //

@@ -22,6 +22,7 @@ lazy val root = project.in(file(".")).settings(
     // Tweeting
     Twitter4j,
     // Testing
-    ScalaTest
+    ScalaTest,
+    Mockito
   )
 )

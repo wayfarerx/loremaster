@@ -13,10 +13,10 @@
 package net.wayfarerx.loremaster
 package event
 
-import model.*
-
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+
+import model.*
 
 /**
  * Definition of a tweet event.

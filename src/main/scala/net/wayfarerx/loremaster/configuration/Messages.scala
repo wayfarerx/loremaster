@@ -11,24 +11,12 @@
  */
 
 package net.wayfarerx.loremaster
-package model
+package configuration
 
 /**
- * The messages provided by the loremaster model.
+ * The messages provided by the loremaster configuraation.
  */
 private object Messages:
 
-  inline def invalidNonEmptyList(repr: String): String =
-    s"Unable to decode non-empty list from $repr"
-
-  inline def invalidId(repr: String): String =
-    s"Unable to decode ID from $repr"
-
-  inline def invalidLocation(repr: String): String =
-    s"Unable to decode location from $repr"
-
-  inline def invalidToken(): String =
-    "Unable to decode token from JSON"
-
-  inline def invalidNameTokenCategory(repr: String): String =
-    s"Unable to decode name token category from $repr"
+  inline def invalidConfiguration(key: String, `type`: String): String =
+    s"Configuration $key of type ${`type`} is not defined"

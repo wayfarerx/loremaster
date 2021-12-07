@@ -77,6 +77,6 @@ object KinesisFunction:
 
   /** The layer provided to AWS Kinesis Lambda functions. */
   private val HostLayer: RLayer[ZEnv & Has[LambdaLogger], ZEnv & Has[Configuration] & Has[LogFactory]] =
-    val config = AwsConfiguration.live
+    val config = Configuration.Live
     val logs = config ++ ZLayer.requires[Has[LambdaLogger]] >>> AwsLogFactory.live
     ZLayer.requires[ZEnv] ++ config ++ logs

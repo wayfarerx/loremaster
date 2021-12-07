@@ -153,7 +153,7 @@ object Log:
     private[this] val index = Seq(Trace, Debug, Info, Warn, Error).map(lvl => lvl.toString.toLowerCase -> lvl).toMap
 
     /** The given configuration data support for log levels. */
-    given Configuration.Data[Level] = decode(_)
+    given Configuration.Data[Level] = Configuration.Data.define("Log.Level")(decode)
 
     /**
      * Decodes a log level from a string.

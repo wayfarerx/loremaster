@@ -13,17 +13,8 @@
 package net.wayfarerx.loremaster
 package configuration
 
-import java.lang.{
-  Boolean => JBoolean,
-  Integer => JInt,
-  Long => JLong,
-  Float => JFloat,
-  Double => JDouble
-}
-
-import scala.reflect.ClassTag
-
-import zio.{Task, UIO}
+import zio.{Has, Task, UIO, URLayer, ZLayer}
+import zio.system.System
 
 import model.*
 
@@ -32,85 +23,112 @@ import model.*
  */
 trait Configuration:
 
-  import Configuration.Data
-
   /**
    * Returns the value of the specified configuration entry.
    *
+   * @tparam T The type of value to return.
    * @param key The key of the configuration entry to return.
    * @return The value of the specified configuration entry.
    */
-  final def apply[T: ClassTag : Data](key: String): Task[T] = get(key) flatMap {
-    _.fold(Task fail IllegalStateException(
-      s"Configuration entry $key: ${summon[ClassTag[T]].runtimeClass.getSimpleName} is not defined."
-    ))(UIO(_))
+  def apply[T: Configuration.Data](key: String): Task[T] = get(key) flatMap {
+    case Some(data) => UIO(data)
+    case None => Task fail ConfigurationException(Messages.invalidConfiguration(key, Configuration.Data[T].`type`))
   }
 
   /**
    * Returns the value of the specified configuration entry if it exists.
    *
+   * @tparam T The type of value to return if it exists.
    * @param key The key of the configuration entry to return.
    * @return The value of the specified configuration entry if it exists.
    */
-  def get[T: Data](key: String): Task[Option[T]]
+  def get[T: Configuration.Data](key: String): Task[Option[T]]
 
 /**
  * Definitions associated with configurations.
  */
 object Configuration:
 
-  /** Support for decoding a specific type of configuration data. */
-  trait Data[T]:
-
-    /**
-     * Decodes configuration data.
-     *
-     * @param data The configuration data to decode.
-     * @return The decoded configuration data.
-     */
-    def decode(data: String): Option[T]
+  /** The live configuration layer. */
+  val Live: URLayer[System, Has[Configuration]] = ZLayer fromService (system => apply(system.env))
 
   /**
-   * Definitions of the supported data types.
+   * Creates a configuration backed by a source.
+   *
+   * @param source The source of the configuration.
+   * @return A configuration backed by a source.
+   */
+  def apply(source: String => Task[Option[String]]): Configuration = new Configuration :
+    override def get[T: Data](key: String): Task[Option[T]] =
+      source(key) map (_ flatMap Data[T].apply)
+
+  /**
+   * Support for a specific type of configuration data.
+   *
+   * @tparam T The type of configuration data to support.
+   */
+  trait Data[T] extends (String => Option[T]) :
+
+    /** The type of this data. */
+    def `type`: String
+
+  /**
+   * Definitions of the supported configuration data types.
    */
   object Data:
 
-    /** False configuration data. */
-    private[this] val falses = Set("0", "f", "n", "off", "false", "no")
-
-    /** True configuration data. */
-    private[this] val trues = Set("1", "t", "y", "on", "true", "yes")
+    /** Boolean data values. */
+    private[this] val BooleanValues = {
+      Iterator("1", "t", "y", "on", "true", "yes").map(_ -> true) ++
+        Iterator("0", "f", "n", "off", "false", "no").map(_ -> false)
+    }.toMap
 
     /** Support for booleans as data. */
-    given Data[Boolean] = _.toLowerCase match
-      case _false if falses(_false) => Some(false)
-      case _true if trues(_true) => Some(true)
-      case _ => None
+    given Data[Boolean] = define("Boolean")(BooleanValues get _.toLowerCase)
+
+    /** Support for bytes as data. */
+    given Data[Byte] = define("Byte") { data =>
+      try Some(java.lang.Byte parseByte data) catch case _: NumberFormatException => None
+    }
+
+    /** Support for shorts as data. */
+    given Data[Short] = define("Short") { data =>
+      try Some(java.lang.Short parseShort data) catch case _: NumberFormatException => None
+    }
 
     /** Support for integers as data. */
-    given Data[Int] = data =>
-      try Some(JInt.parseInt(data)) catch case _: NumberFormatException => None
+    given Data[Int] = define("Int") { data =>
+      try Some(java.lang.Integer parseInt data) catch case _: NumberFormatException => None
+    }
 
     /** Support for longs as data. */
-    given Data[Long] = data =>
-      try Some(JLong.parseLong(data)) catch case _: NumberFormatException => None
+    given Data[Long] = define("Long") { data =>
+      try Some(java.lang.Long parseLong data) catch case _: NumberFormatException => None
+    }
 
     /** Support for floats as data. */
-    given Data[Float] = data =>
-      try Some(JFloat.parseFloat(data)) catch case _: NumberFormatException => None
+    given Data[Float] = define("Float") { data =>
+      try Some(java.lang.Float parseFloat data) catch case _: NumberFormatException => None
+    }
 
     /** Support for doubles as data. */
-    given Data[Double] = data =>
-      try Some(JDouble.parseDouble(data)) catch case _: NumberFormatException => None
+    given Data[Double] = define("Double") { data =>
+      try Some(java.lang.Double parseDouble data) catch case _: NumberFormatException => None
+    }
+
+    /** Support for characters as data. */
+    given Data[Char] = define("Char") { data =>
+      if data.length == 1 then Some(data charAt 0) else None
+    }
 
     /** Support for strings as data. */
-    given Data[String] = Some(_)
+    given Data[String] = define("String")(Some(_))
 
     /** Support for IDs as data. */
-    given Data[ID] = ID decode _
+    given Data[ID] = define("ID")(ID.decode)
 
     /** Support for locations as data. */
-    given Data[Location] = Location decode _
+    given Data[Location] = define("Location")(Location.decode(_))
 
     /**
      * Returns the given data for the specified type.
@@ -118,4 +136,20 @@ object Configuration:
      * @tparam T The type to return the given data for.
      * @return The given data for the specified type.
      */
-    def apply[T: Data]: Data[T] = summon[Data[T]]
+    inline def apply[T: Data]: Data[T] = summon[Data[T]]
+
+    /**
+     * Defines a new type of configuration data.
+     *
+     * @tparam T The type of configuration data to support.
+     * @param `type` The name of the data type.
+     * @param f      The function that decodes data.
+     * @return A new type of configuration data.
+     */
+    inline def define[T](`type`: String)(f: String => Option[T]): Data[T] =
+      val _type = `type`
+      new Data :
+
+        override def `type` = _type
+
+        override def apply(data: String) = f(data)
