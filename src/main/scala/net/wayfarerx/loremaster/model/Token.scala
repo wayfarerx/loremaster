@@ -124,7 +124,7 @@ object Token:
       private[this] val categories = Category.values.map(category => category.toString.toLowerCase -> category).toMap
 
       /** The ordering of name categories. */
-      given Ordering[Category] = (x, y) => x.ordinal - y.ordinal
+      given Ordering[Category] = _.ordinal - _.ordinal
 
       /** The encoding of name categories to JSON. */
       given Encoder[Category] = Encoder[String] contramap (_.toString.toLowerCase)

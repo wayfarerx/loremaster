@@ -130,13 +130,27 @@ trait Log:
    * @param message The message to log.
    * @param thrown  The exception to log.
    */
-  final def apply(level: Level, message: => String, thrown: Throwable): UIO[Unit] =
-    apply(level, message, Option(thrown))
+  def apply(level: Level, message: => String, thrown: Throwable): UIO[Unit] = apply(level, message, Option(thrown))
 
 /**
  * Definitions associated with logs.
  */
-object Log:
+object Log extends ((String, Log.Level, Log.Emitter) => Log) :
+
+  /** The type of log emitter to use. */
+  type Emitter = (Level, String, Option[Throwable]) => UIO[Unit]
+
+  /**
+   * Creates a log backed by a name, threshold and emitter.
+   *
+   * @param name The name of the log.
+   * @param threshold The threshold to drop log entries below.
+   * @param emitter The emitter to deliver log entries to.
+   * @return A log backed by a name, threshold and emitter.
+   */
+  override def apply(name: String, threshold: Level, emitter: Emitter): Log = new Log :
+    override def apply(level: Level, message: => String, thrown: => Option[Throwable]): UIO[Unit] =
+      if Ordering[Level].compare(level, threshold) < 0 then UIO.unit else emitter(level, s"$name: $message", thrown)
 
   /** The definition of the supported logging levels. */
   enum Level:
@@ -150,7 +164,10 @@ object Log:
   object Level:
 
     /** Logging levels indexed by their lowercase representations. */
-    private[this] val index = Seq(Trace, Debug, Info, Warn, Error).map(lvl => lvl.toString.toLowerCase -> lvl).toMap
+    private[this] val index = Level.values.iterator.map(lvl => lvl.toString.toLowerCase -> lvl).toMap
+
+    /** The ordering of log levels. */
+    given Ordering[Level] = _.ordinal - _.ordinal
 
     /** The given configuration data support for log levels. */
     given Configuration.Data[Level] = Configuration.Data.define("Log.Level")(decode)

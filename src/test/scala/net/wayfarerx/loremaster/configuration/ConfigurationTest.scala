@@ -28,18 +28,18 @@ class ConfigurationTest extends AnyFlatSpec with should.Matchers :
 
   "A configuration" should "return data from a source" in {
     val config = Configuration {
-      case "boolean" => UIO(Some("true"))
-      case "byte" => UIO(Some("1"))
-      case "short" => UIO(Some("2"))
-      case "int" => UIO(Some("3"))
-      case "long" => UIO(Some("4"))
-      case "float" => UIO(Some("5.1"))
-      case "double" => UIO(Some("6.2"))
-      case "char" => UIO(Some("a"))
-      case "string" => UIO(Some("str"))
-      case "id" => UIO(Some("id"))
-      case "location" => UIO(Some("the/place"))
-      case _ => UIO(None)
+      case "boolean" => UIO some "true"
+      case "byte" => UIO some "1"
+      case "short" => UIO some "2"
+      case "int" => UIO some "3"
+      case "long" => UIO some "4"
+      case "float" => UIO some "5.1"
+      case "double" => UIO some "6.2"
+      case "char" => UIO some "a"
+      case "string" => UIO some "str"
+      case "id" => UIO some "id"
+      case "location" => UIO some "the/place"
+      case _ => UIO.none
     }
     val effect = for
       boolean <- config[Boolean]("boolean")
@@ -59,5 +59,5 @@ class ConfigurationTest extends AnyFlatSpec with should.Matchers :
   }
 
   it should "fail to return bad data" in {
-    assertThrows[ConfigurationException](Runtime.default unsafeRunTask Configuration(_ => UIO(None))[Int]("int"))
+    assertThrows[ConfigurationException](Runtime.default unsafeRunTask Configuration(_ => UIO.none)[Int]("int"))
   }

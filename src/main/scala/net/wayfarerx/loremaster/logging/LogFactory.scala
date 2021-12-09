@@ -15,12 +15,14 @@ package logging
 
 import scala.reflect.ClassTag
 
-import zio.UIO
+import zio.{Task, UIO}
+
+import configuration.Configuration
 
 /**
  * Definition of the log factory API.
  */
-trait LogFactory extends (String => UIO[Log]) :
+trait LogFactory extends (String => Task[Log]) :
 
   /**
    * Creates a log for the specified class.
@@ -28,7 +30,7 @@ trait LogFactory extends (String => UIO[Log]) :
    * @param cls The class to create the log for.
    * @return A log for the specified class.
    */
-  def apply(cls: Class[_]): UIO[Log] = apply(cls.getSimpleName)
+  def apply(cls: Class[_]): Task[Log] = apply(cls.getSimpleName)
 
   /**
    * Creates a log for the specified type.
@@ -36,4 +38,33 @@ trait LogFactory extends (String => UIO[Log]) :
    * @tparam T The type to create the log for.
    * @return A log for the specified type.
    */
-  inline final def log[T: ClassTag]: UIO[Log] = apply(summon[ClassTag[T]].runtimeClass)
+  inline final def log[T: ClassTag]: Task[Log] = apply(summon[ClassTag[T]].runtimeClass)
+
+/**
+ * Definitions associated with log factories.
+ */
+object LogFactory extends ((Configuration, Log.Emitter) => LogFactory) :
+
+  /** The log level configuration key. */
+  private[this] val Key = "log.level"
+
+  /** A regex that matches sequences of separator characters. */
+  private[this] val Separators = """\.+""".r
+
+  /**
+   * Creates a log factory backed by a configuration and an emitter.
+   *
+   * @param config  The configuration to use.
+   * @param emitter The emitter to use.
+   * @return A log factory backed by a configuration and an emitter.
+   */
+  override def apply(config: Configuration, emitter: Log.Emitter): LogFactory = new LogFactory :
+
+    def findThreshold(components: Vector[String]): Task[Log.Level] =
+      if components.isEmpty then config.get[Log.Level](Key) map (_ getOrElse Log.Level.Warn) else for
+        threshold <- config.get[Log.Level](components.mkString("", ".", s".$Key"))
+        result <- threshold.fold(findThreshold(components.init))(UIO(_))
+      yield result
+
+    override def apply(name: String): Task[Log] =
+      findThreshold(Separators.split(name).iterator.filterNot(_.isEmpty).toVector) map (Log(name, _, emitter))

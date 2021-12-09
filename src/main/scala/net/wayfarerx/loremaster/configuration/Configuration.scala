@@ -13,8 +13,7 @@
 package net.wayfarerx.loremaster
 package configuration
 
-import zio.{Has, Task, UIO, URLayer, ZLayer}
-import zio.system.System
+import zio.{Task, UIO}
 
 import model.*
 
@@ -47,10 +46,7 @@ trait Configuration:
 /**
  * Definitions associated with configurations.
  */
-object Configuration:
-
-  /** The live configuration layer. */
-  val Live: URLayer[System, Has[Configuration]] = ZLayer fromService (system => apply(system.env))
+object Configuration extends ((String => Task[Option[String]]) => Configuration):
 
   /**
    * Creates a configuration backed by a source.
@@ -58,7 +54,7 @@ object Configuration:
    * @param source The source of the configuration.
    * @return A configuration backed by a source.
    */
-  def apply(source: String => Task[Option[String]]): Configuration = new Configuration :
+  override def apply(source: String => Task[Option[String]]): Configuration = new Configuration :
     override def get[T: Data](key: String): Task[Option[T]] =
       source(key) map (_ flatMap Data[T].apply)
 

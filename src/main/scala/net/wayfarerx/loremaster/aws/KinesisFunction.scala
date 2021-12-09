@@ -24,6 +24,7 @@ import io.circe.Decoder
 import io.circe.parser.decode
 
 import zio.{Has, RIO, RLayer, Runtime, Task, UIO, ZEnv, ZLayer}
+import zio.system.System
 
 import configuration.*
 import logging.*
@@ -77,6 +78,6 @@ object KinesisFunction:
 
   /** The layer provided to AWS Kinesis Lambda functions. */
   private val HostLayer: RLayer[ZEnv & Has[LambdaLogger], ZEnv & Has[Configuration] & Has[LogFactory]] =
-    val config = Configuration.Live
+    val config = ZLayer.fromService[System.Service, Configuration](Configuration apply _.env)
     val logs = config ++ ZLayer.requires[Has[LambdaLogger]] >>> AwsLogFactory.live
     ZLayer.requires[ZEnv] ++ config ++ logs
