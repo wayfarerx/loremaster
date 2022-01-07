@@ -1,0 +1,1 @@
+addSbtPlugin("com.dwolla.sbt" % "sbt-s3-publisher" % "1.3.2")

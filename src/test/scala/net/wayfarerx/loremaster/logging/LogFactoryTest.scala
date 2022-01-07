@@ -34,7 +34,7 @@ class LogFactoryTest extends AnyFlatSpec with should.Matchers :
     var emitted = Vector.empty[(Log.Level, String, Option[Throwable])]
     val logs = LogFactory(config, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
     val effect = for
-      global <- logs("global")
+      global <- logs()
       _ <- global.trace("trace")
       _ <- global.info("info")
       _ <- global.error("error")
@@ -45,7 +45,7 @@ class LogFactoryTest extends AnyFlatSpec with should.Matchers :
     yield ()
     Runtime.default unsafeRunTask effect shouldBe()
     emitted shouldBe Vector(
-      (Log.Level.Error, "global: error", None),
+      (Log.Level.Error, "error", None),
       (Log.Level.Info, "LogFactoryTest: info", None),
       (Log.Level.Error, "LogFactoryTest: error", None)
     )

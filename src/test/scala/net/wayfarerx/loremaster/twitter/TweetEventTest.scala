@@ -1,4 +1,4 @@
-/* BookTest.scala
+/* TweetEventTest.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,7 +11,9 @@
  */
 
 package net.wayfarerx.loremaster
-package event
+package twitter
+
+import java.time.Instant
 
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.circe.syntax.*
@@ -23,15 +25,21 @@ import flatspec.*
 import matchers.*
 
 /**
- * Test case for the tweet event type.
+ * Test case for tweet events.
  */
 class TweetEventTest extends AnyFlatSpec with should.Matchers :
 
+  /** A test instant. */
+  private val now = Instant.now
+
   /** A test tweet event. */
-  private val test = TweetEvent(Book.of("A", "B"))
+  private val test = TweetEvent(Book.of("A", "B"), now)
 
   "TweetEvent" should "encode tweet events to JSON" in {
-    Encoder[TweetEvent].apply(test) shouldBe Json.obj("book" -> test.book.asJson)
+    Encoder[TweetEvent].apply(test) shouldBe Json.obj(
+      "book" -> test.book.asJson,
+      "createdAt" -> now.asJson
+    )
   }
 
   it should "decode tweet events from JSON" in {

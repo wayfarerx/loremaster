@@ -1,6 +1,6 @@
-/* TweetEvent.scala
+/* Messages.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -11,25 +11,21 @@
  */
 
 package net.wayfarerx.loremaster
-package event
-
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-
-import model.*
+package aws
 
 /**
- * Definition of a tweet event.
+ * The messages provided by the AWS package.
  */
-case class TweetEvent(book: Book)
+private object Messages {
 
-/**
- * Factory for tweet events.
- */
-object TweetEvent extends (Book => TweetEvent) :
+  def okay: String = "200 OK"
 
-  /** The encoding of books to JSON. */
-  given Encoder[TweetEvent] = deriveEncoder
+  def beforeHandlingSqsInput: String = "Before handling SQS input"
 
-  /** The decoding of books from JSON. */
-  given Decoder[TweetEvent] = deriveDecoder
+  def afterHandlingSqsInput: String = "After handling SQS input"
+
+  def failedToDecodeSqsMessage(message: String): String = s"Failed to decode SQS message: $message"
+
+  def failedToHandleSqsMessage(message: String): String = s"Failed to handle SQS message: $message"
+
+}

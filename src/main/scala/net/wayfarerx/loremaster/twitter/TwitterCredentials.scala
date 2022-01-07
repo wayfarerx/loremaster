@@ -13,6 +13,8 @@
 package net.wayfarerx.loremaster
 package twitter
 
+import twitter4j.conf.ConfigurationBuilder
+
 import zio.Task
 
 import configuration.*
@@ -30,12 +32,24 @@ case class TwitterCredentials(
   consumerSecret: String,
   accessToken: String,
   accessTokenSecret: String
-)
+):
+
+  /**
+   * Configures a Twitter connection with these credentials.
+   *
+   * @param builder The configuration builder to use.
+   * @return The specified configuration builder with these credentials added.
+   */
+  def configure(builder: ConfigurationBuilder): ConfigurationBuilder = builder
+    .setOAuthConsumerKey(consumerKey)
+    .setOAuthConsumerSecret(consumerSecret)
+    .setOAuthAccessToken(accessToken)
+    .setOAuthAccessTokenSecret(accessTokenSecret)
 
 /**
  * Factory for Twitter credentials.
  */
-object TwitterCredentials extends ((String, String, String, String) => TwitterCredentials):
+object TwitterCredentials extends ((String, String, String, String) => TwitterCredentials) :
 
   /**
    * Creates configured Twitter credentials.
@@ -44,8 +58,8 @@ object TwitterCredentials extends ((String, String, String, String) => TwitterCr
    * @return The configured Twitter credentials.
    */
   def apply(config: Configuration): Task[TwitterCredentials] = for
-    consumerKey <- config[String](s"$Twitter.consumerKey")
-    consumerSecret <- config[String](s"$Twitter.consumerSecret")
-    accessToken <- config[String](s"$Twitter.accessToken")
-    accessTokenSecret <- config[String](s"$Twitter.accessTokenSecret")
+    consumerKey <- config[String](s"$TwitterPrefix.consumerKey")
+    consumerSecret <- config[String](s"$TwitterPrefix.consumerSecret")
+    accessToken <- config[String](s"$TwitterPrefix.accessToken")
+    accessTokenSecret <- config[String](s"$TwitterPrefix.accessTokenSecret")
   yield TwitterCredentials(consumerKey, consumerSecret, accessToken, accessTokenSecret)

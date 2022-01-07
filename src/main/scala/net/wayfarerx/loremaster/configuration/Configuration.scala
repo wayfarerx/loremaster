@@ -13,9 +13,13 @@
 package net.wayfarerx.loremaster
 package configuration
 
+import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.util.Try
+
 import zio.{Task, UIO}
 
 import model.*
+
 
 /**
  * Definition of the configuration service.
@@ -43,10 +47,24 @@ trait Configuration:
    */
   def get[T: Configuration.Data](key: String): Task[Option[T]]
 
+  /**
+   * Returns the value of the specified configuration entry if it exists or the supplied default.
+   *
+   * @tparam T The type of value to return if it exists.
+   * @param key     The key of the configuration entry to return.
+   * @param default The default to return if the configuration entry does not exist.
+   * @return The value of the specified configuration entry if it exists or the supplied default.
+   */
+  def getOrElse[T: Configuration.Data](key: String, default: => T): Task[T] =
+    get(key) map (_ getOrElse default)
+
 /**
  * Definitions associated with configurations.
  */
-object Configuration extends ((String => Task[Option[String]]) => Configuration):
+object Configuration extends ((String => Task[Option[String]]) => Configuration) :
+
+  /** The empty configuration. */
+  val empty: Configuration = Configuration(_ => UIO.none)
 
   /**
    * Creates a configuration backed by a source.
@@ -119,6 +137,12 @@ object Configuration extends ((String => Task[Option[String]]) => Configuration)
 
     /** Support for strings as data. */
     given Data[String] = define("String")(Some(_))
+
+    /** Support for finite durations as data. */
+    given Data[FiniteDuration] = define("FiniteDuration") { data =>
+      try Some(Duration(data)) collect { case result: FiniteDuration => result }
+      catch case _: NumberFormatException => None
+    }
 
     /** Support for IDs as data. */
     given Data[ID] = define("ID")(ID.decode)

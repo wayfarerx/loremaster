@@ -30,6 +30,7 @@ object Dependencies {
   def AwsVersion = "1.2.1"
   lazy val AwsLambdaCore = AwsGroup % "aws-lambda-java-core" % AwsVersion
   lazy val AwsLambdaEvents = AwsGroup % "aws-lambda-java-events" % "3.10.0"
+  lazy val AwsSqs = AwsGroup % "amazon-sqs-java-messaging-lib" % "1.0.4"
 
   // Tweeting
 

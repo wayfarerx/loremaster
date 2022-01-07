@@ -11,7 +11,19 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
+package aws
 
-/** The prefix for twitter settings */
-val TwitterPrefix = "twitter"
+import zio.{Has, RLayer, ZEnv, ZLayer}
+import zio.system.System
+
+import configuration.*
+import logging.*
+
+/** The type of environment that AWS effects operate in. */
+type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
+
+/** Factory for AWS environments. */
+val AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
+  val config = ZLayer.fromService(Configuration apply (_: System.Service).env)
+  val logs = config ++ ZLayer.requires[Has[LogEmitter]] >>> ZLayer.fromServices(LogFactory(_, _))
+  ZLayer.requires[ZEnv] ++ config ++ logs

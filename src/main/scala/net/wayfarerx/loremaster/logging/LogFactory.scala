@@ -25,6 +25,13 @@ import configuration.Configuration
 trait LogFactory extends (String => Task[Log]) :
 
   /**
+   * Returns the global log.
+   *
+   * @return The global log.
+   */
+  def apply(): Task[Log] = apply("")
+
+  /**
    * Creates a log for the specified class.
    *
    * @param cls The class to create the log for.
@@ -43,7 +50,7 @@ trait LogFactory extends (String => Task[Log]) :
 /**
  * Definitions associated with log factories.
  */
-object LogFactory extends ((Configuration, Log.Emitter) => LogFactory) :
+object LogFactory extends ((Configuration, LogEmitter) => LogFactory) :
 
   /** The log level configuration key. */
   private[this] val Key = "log.level"
@@ -58,7 +65,7 @@ object LogFactory extends ((Configuration, Log.Emitter) => LogFactory) :
    * @param emitter The emitter to use.
    * @return A log factory backed by a configuration and an emitter.
    */
-  override def apply(config: Configuration, emitter: Log.Emitter): LogFactory = new LogFactory :
+  override def apply(config: Configuration, emitter: LogEmitter): LogFactory =
 
     def findThreshold(components: Vector[String]): Task[Log.Level] =
       if components.isEmpty then config.get[Log.Level](Key) map (_ getOrElse Log.Level.Warn) else for
@@ -66,5 +73,7 @@ object LogFactory extends ((Configuration, Log.Emitter) => LogFactory) :
         result <- threshold.fold(findThreshold(components.init))(UIO(_))
       yield result
 
-    override def apply(name: String): Task[Log] =
-      findThreshold(Separators.split(name).iterator.filterNot(_.isEmpty).toVector) map (Log(name, _, emitter))
+    new LogFactory :
+      override def apply(name: String): Task[Log] =
+        val components = Separators.split(name).iterator.filterNot(_.isEmpty).toVector
+        findThreshold(components) map (Log(components mkString ".", _, emitter))

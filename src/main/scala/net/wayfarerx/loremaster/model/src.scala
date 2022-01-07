@@ -13,9 +13,13 @@
 package net.wayfarerx.loremaster
 package model
 
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+
 import cats.data.NonEmptyList
 
 import io.circe.{Decoder, Encoder, parser}
+
 
 /** The given non empty list encoder. */
 given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]] contramap (_.toList)
@@ -26,22 +30,24 @@ given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap { list =>
 }
 
 /**
- * Encodes data into a JSON string.
+ * Encodes a value into a JSON string.
  *
- * @tparam T The type of data to encode.
- * @param data The data to encode.
- * @return The data encoded as a JSON sting.
+ * @tparam T The type of value to encode.
+ * @param value The value to encode.
+ * @return The value encoded as a JSON sting.
  */
-def encodeJson[T: Encoder](data: T): String = Encoder[T].apply(data).spaces2
+def encodeJson[T: Encoder](value: T): String =
+  Encoder[T].apply(value).spaces2
 
 /**
- * Attempts to decode data from a JSON string.
+ * Attempts to decode a value from a JSON string.
  *
- * @tparam T The type of data to decode.
- * @param json The JSON to decode.
- * @return The result of attempting to decode data from a JSON string.
+ * @tparam T The type of value to decode.
+ * @param json The JSON string to decode.
+ * @return The result of attempting to decode a value from a JSON string.
  */
-def decodeJson[T: Decoder](json: String): Either[Exception, T] = parser.decode[T](json)
+def decodeJson[T: Decoder](json: String): Either[Exception, T] =
+  parser.decode[T](json)
 
 /**
  * Extensions to the StringContext type.

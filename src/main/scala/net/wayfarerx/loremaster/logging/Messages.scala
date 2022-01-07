@@ -1,4 +1,4 @@
-/* src.scala
+/* Messages.scala
  *
  * Copyright (c) 2021 wayfarerx (@thewayfarerx).
  *
@@ -11,7 +11,20 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
+package logging
 
-/** The prefix for twitter settings */
-val TwitterPrefix = "twitter"
+/**
+ * The messages provided by the loremaster model.
+ */
+private object Messages {
+
+  val Space = " "
+
+  val Exclamation = "!"
+
+  val Period = "."
+
+  def causedBy(thrown: Throwable): String =
+    s", caused by ${thrown.getClass.getSimpleName}${Option(thrown.getMessage).fold("")(msg => s"($msg)")}"
+
+}

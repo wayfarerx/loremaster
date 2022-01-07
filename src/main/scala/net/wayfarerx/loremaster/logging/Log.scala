@@ -135,10 +135,10 @@ trait Log:
 /**
  * Definitions associated with logs.
  */
-object Log extends ((String, Log.Level, Log.Emitter) => Log) :
+object Log extends ((String, Log.Level, LogEmitter) => Log) :
 
-  /** The type of log emitter to use. */
-  type Emitter = (Level, String, Option[Throwable]) => UIO[Unit]
+  /** A log that never logs anything. */
+  val NoOp: Log = define((_, _, _) => UIO.unit)
 
   /**
    * Creates a log backed by a name, threshold and emitter.
@@ -148,9 +148,13 @@ object Log extends ((String, Log.Level, Log.Emitter) => Log) :
    * @param emitter The emitter to deliver log entries to.
    * @return A log backed by a name, threshold and emitter.
    */
-  override def apply(name: String, threshold: Level, emitter: Emitter): Log = new Log :
-    override def apply(level: Level, message: => String, thrown: => Option[Throwable]): UIO[Unit] =
-      if Ordering[Level].compare(level, threshold) < 0 then UIO.unit else emitter(level, s"$name: $message", thrown)
+  override def apply(name: String, threshold: Level, emitter: LogEmitter): Log =
+    define { (level, message, thrown) =>
+      if Ordering[Level].compare(level, threshold) < 0 then UIO.unit
+      else emitter(level, if name.isEmpty then message else s"$name: $message", thrown)
+    }
+
+  def define(f: (Level, String, Option[Throwable]) => UIO[Unit]): Log = f(_, _, _)
 
   /** The definition of the supported logging levels. */
   enum Level:

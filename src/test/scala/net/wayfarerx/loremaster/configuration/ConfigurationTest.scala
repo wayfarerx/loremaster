@@ -13,6 +13,8 @@
 package net.wayfarerx.loremaster
 package configuration
 
+import scala.concurrent.duration.*
+
 import zio.{Runtime, UIO}
 
 import model.*
@@ -37,6 +39,7 @@ class ConfigurationTest extends AnyFlatSpec with should.Matchers :
       case "double" => UIO some "6.2"
       case "char" => UIO some "a"
       case "string" => UIO some "str"
+      case "duration" => UIO some "3min"
       case "id" => UIO some "id"
       case "location" => UIO some "the/place"
       case _ => UIO.none
@@ -51,13 +54,17 @@ class ConfigurationTest extends AnyFlatSpec with should.Matchers :
       double <- config[Double]("double")
       char <- config[Char]("char")
       string <- config[String]("string")
+      duration <- config[FiniteDuration]("duration")
       id <- config[ID]("id")
       location <- config[Location]("location")
-    yield boolean :: byte :: short :: int :: long :: float :: double :: char :: string :: id :: location :: Nil
+    yield boolean :: byte :: short :: int :: long :: float :: double :: char :: string :: duration :: id :: location :: Nil
     Runtime.default unsafeRunTask effect shouldBe
-      true :: 1.toByte :: 2.toShort :: 3 :: 4L :: 5.1f :: 6.2 :: 'a' :: "str" :: id"id" :: location"the/place" :: Nil
+      true :: 1.toByte :: 2.toShort :: 3 :: 4L :: 5.1f :: 6.2 :: 'a' :: "str" :: 3.minutes :: id"id" :: location"the/place" :: Nil
   }
 
-  it should "fail to return bad data" in {
-    assertThrows[ConfigurationException](Runtime.default unsafeRunTask Configuration(_ => UIO.none)[Int]("int"))
+  it should "fail to return missing data" in {
+    val config = Configuration(_ => UIO.none)
+    assertThrows[ConfigurationException](Runtime.default unsafeRunTask config[Int]("int"))
+    Runtime.default unsafeRunTask config.get[Int]("int") shouldBe None
+    Runtime.default unsafeRunTask config.getOrElse("int", 5) shouldBe 5
   }

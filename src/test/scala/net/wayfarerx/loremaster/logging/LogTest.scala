@@ -28,7 +28,7 @@ class LogTest extends AnyFlatSpec with should.Matchers :
 
   "A log" should "log all events" in {
     var emitted = Vector.empty[(Log.Level, String, Option[Throwable])]
-    val log = Log("test", Log.Level.Trace, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
+    val log = Log("", Log.Level.Trace, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
     val thrown = new RuntimeException
     val effect = for
       _ <- log.trace("trace")
@@ -44,16 +44,16 @@ class LogTest extends AnyFlatSpec with should.Matchers :
     yield ()
     Runtime.default unsafeRunTask effect shouldBe()
     emitted shouldBe Vector(
-      (Log.Level.Trace, "test: trace", None),
-      (Log.Level.Trace, "test: trace", Some(thrown)),
-      (Log.Level.Debug, "test: debug", None),
-      (Log.Level.Debug, "test: debug", Some(thrown)),
-      (Log.Level.Info, "test: info", None),
-      (Log.Level.Info, "test: info", Some(thrown)),
-      (Log.Level.Warn, "test: warn", None),
-      (Log.Level.Warn, "test: warn", Some(thrown)),
-      (Log.Level.Error, "test: error", None),
-      (Log.Level.Error, "test: error", Some(thrown))
+      (Log.Level.Trace, "trace", None),
+      (Log.Level.Trace, "trace", Some(thrown)),
+      (Log.Level.Debug, "debug", None),
+      (Log.Level.Debug, "debug", Some(thrown)),
+      (Log.Level.Info, "info", None),
+      (Log.Level.Info, "info", Some(thrown)),
+      (Log.Level.Warn, "warn", None),
+      (Log.Level.Warn, "warn", Some(thrown)),
+      (Log.Level.Error, "error", None),
+      (Log.Level.Error, "error", Some(thrown))
     )
   }
 
