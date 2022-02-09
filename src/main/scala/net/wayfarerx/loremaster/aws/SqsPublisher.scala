@@ -37,7 +37,7 @@ final class SqsPublisher[T: Encoder](sqs: AmazonSQS, queueUrl: String) extends P
 
   /* Schedule an event for publishing. */
   override def apply(event: T, delay: Option[FiniteDuration]): Task[Unit] =
-    val request = SendMessageRequest(queueUrl, encodeJson(event))
+    val request = SendMessageRequest(queueUrl, emitJson(event))
     Task {
       sqs sendMessage delay.filter(_ >= Duration.Zero).fold(request) { _delay =>
         request withDelaySeconds math.min(_delay.toSeconds, SqsPublisher.MaxDelaySeconds).toInt
@@ -56,11 +56,11 @@ object SqsPublisher:
    * Creates a configured SQS publisher.
    *
    * @tparam T The type of event to send to the SQS publisher.
-   * @param topic The topic of the SQS publisher.
    * @param config The configuration to use.
+   * @param topic The topic of the SQS publisher.
    * @return A configured SQS publisher.
    */
-  def apply[T: Encoder](topic: String, config: Configuration): Task[SqsPublisher[T]] = for
+  def apply[T: Encoder](config: Configuration, topic: String): Task[SqsPublisher[T]] = for
     client <- Task(AmazonSQSClientBuilder.standard.build)
-    queueUrl <- config[String](s"$topic.url")
+    queueUrl <- config[String](topic)
   yield new SqsPublisher(client, queueUrl)

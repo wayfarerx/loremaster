@@ -42,65 +42,65 @@ class RetriesTest extends AnyFlatSpec with should.Matchers :
   private[this] val delay = 1.micro
 
   /** A backoff to use while testing. */
-  private[this] val backoff = Backoff Constant delay
+  private[this] val backoff = Backoff.Constant(delay)
 
   "Retries" should "support constant backoff" in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff Constant delay)
+    val retries = Default.copy(backoff = Backoff.Constant(delay))
     retries(event1) shouldBe Some(event2 -> delay)
     retries(event2) shouldBe Some(event3 -> delay)
   }
 
-  it should "support linear backoff" in {
+  it.should ("support linear backoff") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff Linear delay)
+    val retries = Default.copy(backoff = Backoff.Linear(delay))
     retries(event1) shouldBe Some(event2 -> delay)
     retries(event2) shouldBe Some(event3 -> (delay * 2))
   }
 
-  it should "support golden backoff" in {
+  it.should ("support golden backoff") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff Golden delay)
+    val retries = Default.copy(backoff = Backoff.Golden(delay))
     retries(event1) shouldBe Some(event2 -> delay)
     retries(event2) shouldBe Some(event3 -> (delay * 2))
   }
 
-  it should "support retry limits" in {
+  it.should ("support retry limits") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
-    val retries = event.Retries(backoff, Termination LimitRetries 1)
+    val retries = event.Retries(backoff, Termination.LimitRetries(1))
     retries(event1) shouldBe Some(event2 -> delay)
     retries(event2) shouldBe None
   }
 
-  it should "support duration limits" in {
+  it.should ("support duration limits") in {
     val event1 = TestEvent()
-    val retries = event.Retries(backoff, Termination LimitDuration 0.millis)
+    val retries = event.Retries(backoff, Termination.LimitDuration(0.millis))
     retries(event1) shouldBe None
   }
 
-  it should "support parsing configurations" in {
+  it.should ("support parsing configurations") in {
     val config = Configuration.Data[event.Retries]
     config("") shouldBe None
-    config("3 seconds") shouldBe Some(Default.copy(backoff = Backoff Constant 3.seconds))
-    config("+4 seconds") shouldBe Some(Default.copy(backoff = Backoff Linear 4.seconds))
-    config("~5 seconds") shouldBe Some(Default.copy(backoff = Backoff Golden 5.seconds))
+    config("3 seconds") shouldBe Some(Default.copy(backoff = Backoff.Constant(3.seconds)))
+    config("+4 seconds") shouldBe Some(Default.copy(backoff = Backoff.Linear(4.seconds)))
+    config("~5 seconds") shouldBe Some(Default.copy(backoff = Backoff.Golden(5.seconds)))
     config(":") shouldBe None
-    config(":3") shouldBe Some(Default.copy(termination = Termination LimitRetries 3))
-    config(":3 seconds") shouldBe Some(Default.copy(termination = Termination LimitDuration 3.seconds))
-    config("3 seconds:3") shouldBe Some(event.Retries(Backoff Constant 3.seconds, Termination LimitRetries 3))
-    config("+4 seconds:4") shouldBe Some(event.Retries(Backoff Linear 4.seconds, Termination LimitRetries 4))
-    config("~5 seconds:5") shouldBe Some(event.Retries(Backoff Golden 5.seconds, Termination LimitRetries 5))
+    config(":3") shouldBe Some(Default.copy(termination = Termination.LimitRetries(3)))
+    config(":3 seconds") shouldBe Some(Default.copy(termination = Termination.LimitDuration(3.seconds)))
+    config("3 seconds:3") shouldBe Some(event.Retries(Backoff.Constant(3.seconds), Termination.LimitRetries(3)))
+    config("+4 seconds:4") shouldBe Some(event.Retries(Backoff.Linear(4.seconds), Termination.LimitRetries(4)))
+    config("~5 seconds:5") shouldBe Some(event.Retries(Backoff.Golden(5.seconds), Termination.LimitRetries(5)))
   }
 
   /** An event to test with. */
-  private[this] case class TestEvent(createdAt: Instant = Instant.now, previousAttempts: Int = 1):
+  private[this] case class TestEvent(createdAt: Instant = Instant.now, previousAttempts: Int = 0):
 
     /** Create the next attempt at this event. */
     def nextAttempt: TestEvent = copy(previousAttempts = previousAttempts + 1)

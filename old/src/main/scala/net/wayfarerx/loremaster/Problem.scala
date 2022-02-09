@@ -33,7 +33,7 @@ object Problem:
    *
    * @return A new problem.
    */
-  def apply(): Problem =
+  def apply(): http.HttpProblem =
     Problem("Problem encountered.", None)
 
 
@@ -43,7 +43,7 @@ object Problem:
    * @param message The message that describes the problem.
    * @return A new problem.
    */
-  def apply(message: String): Problem =
+  def apply(message: String): http.HttpProblem =
     resolve(message).fold(apply())(Problem(_, None))
 
   /**
@@ -52,7 +52,7 @@ object Problem:
    * @param cause The throwable that caused the problem.
    * @return A new problem.
    */
-  def apply(cause: Throwable): Problem =
+  def apply(cause: Throwable): http.HttpProblem =
     Option(cause).fold(apply())(c => Problem(resolveMessage(c.getMessage), Some(c)))
 
   /**
@@ -62,7 +62,7 @@ object Problem:
    * @param cause   The throwable that caused the problem.
    * @return A new problem.
    */
-  def apply(message: String, cause: Throwable): Problem =
+  def apply(message: String, cause: Throwable): http.HttpProblem =
     val _cause = Option(cause)
     Problem(resolveMessage(message, _cause.fold("")(_.getMessage)), _cause)
 

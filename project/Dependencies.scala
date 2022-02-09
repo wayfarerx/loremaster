@@ -4,11 +4,9 @@ object Dependencies {
 
   def Scala3Version = "3.0.0"
 
-  // API
+  // Core
 
-  def CatsGroup = "org.typelevel"
-  def CatsVersion = "2.6.1"
-  lazy val CatsCore = CatsGroup %% "cats-core" % CatsVersion
+  lazy val CatsCore = "org.typelevel" %% "cats-core" % "2.6.1"
 
   def CirceGroup = "io.circe"
   def CirceVersion = "0.14.1"
@@ -16,41 +14,30 @@ object Dependencies {
   lazy val CirceGeneric = CirceGroup %% "circe-generic" % CirceVersion
   lazy val CirceParser = CirceGroup %% "circe-parser" % CirceVersion
 
-  def ScalacticGroup = "org.scalactic"
-  def ScalacticVersion = "3.2.10"
-  lazy val Scalactic = ScalacticGroup %% "scalactic" % ScalacticVersion
+  lazy val Scalactic = "org.scalactic" %% "scalactic" % "3.2.10"
 
-  def ZioGroup = "dev.zio"
-  def ZioVersion = "1.0.12"
-  lazy val Zio = ZioGroup %% "zio" % ZioVersion
+  lazy val Zio = "dev.zio" %% "zio" % "1.0.12"
 
   // AWS
 
   def AwsGroup = "com.amazonaws"
-  def AwsVersion = "1.2.1"
-  lazy val AwsLambdaCore = AwsGroup % "aws-lambda-java-core" % AwsVersion
+  lazy val AwsLambdaCore = AwsGroup % "aws-lambda-java-core" % "1.2.1"
   lazy val AwsLambdaEvents = AwsGroup % "aws-lambda-java-events" % "3.10.0"
   lazy val AwsSqs = AwsGroup % "amazon-sqs-java-messaging-lib" % "1.0.4"
 
-  // Tweeting
+  // Testing
+
+  lazy val ScalaTest = "org.scalatest" %% "scalatest" % "3.2.10" % Test
+
+  lazy val Mockito = "org.scalatestplus" %% "mockito-3-4" % "3.2.10.0" % Test
+
+  //
+  //
+  //
 
   def Twitter4jGroup = "org.twitter4j"
   def Twitter4jVersion = "4.0.7"
   lazy val Twitter4j = Twitter4jGroup % "twitter4j-core" % Twitter4jVersion
-
-  // Testing
-
-  def ScalaTestGroup = "org.scalatest"
-  def ScalaTestVersion = "3.2.10"
-  lazy val ScalaTest = ScalaTestGroup %% "scalatest" % ScalaTestVersion % Test
-
-  def MockitoGroup = "org.scalatestplus"
-  def MockitoVersion = "3.2.10.0"
-  lazy val Mockito = MockitoGroup %% "mockito-3-4" % MockitoVersion % Test
-
-  //
-  //
-  //
 
   def Slf4jGroup = "org.slf4j"
   def Slf4jVersion = "1.7.32"
@@ -78,11 +65,6 @@ object Dependencies {
   def ScoptVersion = "4.0.1"
   lazy val Scopt = "com.github.scopt" %% "scopt" % ScoptVersion
 
-  def SttpZioVersion = "3.3.9"
-  lazy val SttpZio = "com.softwaremill.sttp.client3" %% "httpclient-backend-zio" % SttpZioVersion
-
-  lazy val ZioCache = ZioGroup %% "zio-cache" % "0.1.0"
-  lazy val ZioTest = ZioGroup %% "zio-test" % ZioVersion % "test"
-  lazy val ZioTestSbt = ZioGroup %% "zio-test-sbt" % ZioVersion % "test"
+  lazy val SttpZio = "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio1" % "3.3.15"
 
 }

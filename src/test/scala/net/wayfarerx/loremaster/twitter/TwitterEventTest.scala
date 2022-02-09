@@ -27,22 +27,22 @@ import matchers.*
 /**
  * Test case for tweet events.
  */
-class TweetEventTest extends AnyFlatSpec with should.Matchers :
+class TwitterEventTest extends AnyFlatSpec with should.Matchers :
 
   /** A test instant. */
   private val now = Instant.now
 
   /** A test tweet event. */
-  private val test = TweetEvent(Book.of("A", "B"), now)
+  private val test = TwitterEvent(Book.of("A", "B"), now)
 
   "TweetEvent" should "encode tweet events to JSON" in {
-    Encoder[TweetEvent].apply(test) shouldBe Json.obj(
+    Encoder[TwitterEvent].apply(test) shouldBe Json.obj(
       "book" -> test.book.asJson,
       "createdAt" -> now.asJson
     )
   }
 
-  it should "decode tweet events from JSON" in {
-    Decoder[TweetEvent].apply(HCursor fromJson test.asJson) shouldBe Right(test)
+  it.should("decode tweet events from JSON") in {
+    Decoder[TwitterEvent].apply(HCursor.fromJson(test.asJson)) shouldBe Right(test)
   }
 

@@ -1,6 +1,6 @@
 /* Messages.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -18,16 +18,13 @@ package model
  */
 private object Messages:
 
-  inline def invalidNonEmptyList(repr: String): String =
-    s"Unable to decode non-empty list from $repr"
-
   inline def invalidId(repr: String): String =
     s"Unable to decode ID from $repr"
 
   inline def invalidLocation(repr: String): String =
     s"Unable to decode location from $repr"
 
-  inline def invalidToken(): String =
+  inline def invalidToken: String =
     "Unable to decode token from JSON"
 
   inline def invalidNameTokenCategory(repr: String): String =

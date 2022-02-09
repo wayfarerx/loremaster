@@ -15,20 +15,16 @@ package service
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-
 import scala.concurrent.duration.*
 import scala.jdk.CollectionConverters.*
-
 import cats.data.NonEmptyList
-
 import org.jsoup.Jsoup
 import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
-
-import zio.{Has, Ref, RIO, Task, UIO, ZIO}
+import zio.{Has, RIO, Ref, Task, UIO, ZIO}
 import zio.clock.Clock
-
 import model.*
+import net.wayfarerx.loremaster.http.Http
 
 /**
  * Definition of the zeitgeist service API.
@@ -58,7 +54,7 @@ object Zeitgeist:
   val Prefix: Location = Location.of(ZeitgeistId)
 
   /** The live zeitgeist layer. */
-  val live: zio.RLayer[Clock & Has[Configuration] & Has[Log.Factory] & Has[Storage] & Has[Https], Has[Zeitgeist]] =
+  val live: zio.RLayer[Clock & Has[Configuration] & Has[Log.Factory] & Has[Storage] & Has[Http], Has[Zeitgeist]] =
     zio.ZLayer.fromEffect {
       for
         clock <- RIO.service[Clock.Service]
@@ -66,7 +62,7 @@ object Zeitgeist:
         logFactory <- RIO.service[Log.Factory]
         log <- logFactory(classOf[Zeitgeist].getSimpleName)
         storage <- RIO.service[Storage]
-        https <- RIO.service[Https]
+        https <- RIO.service[Http]
         zeitgeist <- apply(
           configuration.zeitgeist,
           clock,
@@ -81,7 +77,7 @@ object Zeitgeist:
 
   /** The supported zeitgeist factories. */
   private val factories:
-    Map[String, (Clock.Service, Log, Storage, Https, FiniteDuration, FiniteDuration, Ref[Instant]) => Zeitgeist] =
+    Map[String, (Clock.Service, Log, Storage, Http, FiniteDuration, FiniteDuration, Ref[Instant]) => Zeitgeist] =
     Map(TesImperialLibrary.Designator.toLowerCase -> TesImperialLibrary)
 
   /**
@@ -101,7 +97,7 @@ object Zeitgeist:
     clock: Clock.Service,
     log: Log,
     storage: Storage,
-    https: Https,
+    https: Http,
     expiration: FiniteDuration,
     cooldown: FiniteDuration
   ): Task[Zeitgeist] =
@@ -140,7 +136,7 @@ object Zeitgeist:
     protected def storage: Storage
 
     /** The service that processes HTTPS operations.. */
-    protected def https: Https
+    protected def https: Http
 
     /** The cache expiration period to use. */
     protected def expiration: FiniteDuration
@@ -308,7 +304,7 @@ object Zeitgeist:
     clock: Clock.Service,
     log: Log,
     storage: Storage,
-    https: Https,
+    https: Http,
     expiration: FiniteDuration,
     cooldown: FiniteDuration,
     previousCompletionAt: Ref[Instant]
@@ -382,7 +378,7 @@ object Zeitgeist:
    * Factory for Elder Scrolls Imperial Zeitgeist services.
    */
   object TesImperialLibrary
-    extends ((Clock.Service, Log, Storage, Https, FiniteDuration, FiniteDuration, Ref[Instant]) => TesImperialLibrary) :
+    extends ((Clock.Service, Log, Storage, Http, FiniteDuration, FiniteDuration, Ref[Instant]) => TesImperialLibrary) :
 
     /** The designator for the TES Imperial Library zeitgeist. */
     val Designator = "TesImperialLibrary"

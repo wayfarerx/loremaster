@@ -1,6 +1,6 @@
 /* Retries.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -36,15 +36,15 @@ case class Retries(backoff: Retries.Backoff, termination: Retries.Termination):
   def apply[T: Event](event: T): Option[(T, FiniteDuration)] =
     if termination(event) then None else Some(Event[T].nextAttempt(event) -> backoff(event))
 
+  /* Encode the retry policy. */
+  override def toString: String = s"$backoff:$termination"
+
 /**
  * Factory for retry policies.
  */
 object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
   import Configuration.Data
-
-  /** The name of retries in configurations. */
-  val Name = "retries"
 
   /** The separator of retry backoffs and retry terminations. */
   private[this] val Separator = ':'
@@ -108,6 +108,9 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
       /* Return the constant backoff. */
       override def apply[T: Event](event: T): FiniteDuration = delay
 
+      /* Encode the constant backoff. */
+      override def toString: String = delay.toString
+
     /**
      * Returns a backoff that increases by `delay` after every attempt.
      *
@@ -117,7 +120,10 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
       /* Increase the backoff after every attempt. */
       override def apply[T: Event](event: T): FiniteDuration =
-        delay * Event[T].previousAttempts(event)
+        delay * (Event[T].previousAttempts(event) + 1)
+
+      /* Encode the linear backoff. */
+      override def toString: String = s"${Linear.Designator}$delay"
 
     /**
      * Factory for linear backoffs.
@@ -136,7 +142,10 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
       /* Multiply the backoff by the golden ratio after every attempt. */
       override def apply[T: Event](event: T): FiniteDuration =
-        delay * math.pow(8.0 / 5.0, Event[T].previousAttempts(event) - 1).round
+        delay * math.pow(8.0 / 5.0, Event[T].previousAttempts(event)).round
+
+      /* Encode the golden backoff. */
+      override def toString: String = s"${Golden.Designator}$delay"
 
     /**
      * Factory for golden backoffs.
@@ -147,16 +156,16 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
       val Designator: Char = '~'
 
   /**
-   * A policy that determines when retry operations should cease.
+   * A policy that determines when retry operations should terminate.
    */
   sealed trait Termination:
 
     /**
-     * Determines if the specified event should be retried.
+     * Determines if the specified event should terminate.
      *
      * @tparam T The type of event to examine.
      * @param event The event to examine.
-     * @return True if the specified event should not be retried.
+     * @return True if the specified event should terminate.
      */
     def apply[T: Event](event: T): Boolean
 
@@ -167,7 +176,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
     /** Support for retry termination policies as configuration data. */
     given Data[Termination] = Data.define("Retries.Termination") { data =>
-      Data[FiniteDuration] apply data map LimitDuration.apply orElse (Data[Int] apply data map LimitRetries.apply)
+      Data[Int] apply data map LimitRetries.apply orElse (Data[FiniteDuration] apply data map LimitDuration.apply)
     }
 
     /** The default backoff policy. */
@@ -182,7 +191,10 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
       /* Limit the number of retry attempts. */
       override def apply[T: Event](event: T): Boolean =
-        Event[T].previousAttempts(event) > maximum
+        Event[T].previousAttempts(event) >= maximum
+
+      /* Encode the limit on retries. */
+      override def toString: String = maximum.toString
 
     /**
      * Limits the duration of all retry attempts.
@@ -193,4 +205,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
 
       /* Limit the duration of all retry attempts. */
       override def apply[T: Event](event: T): Boolean =
-        Event[T] createdAt event plusMillis maximum.toMillis isBefore Instant.now
+        Event[T].createdAt(event) plusMillis maximum.toMillis isBefore Instant.now
+
+      /* Encode the limit on duration. */
+      override def toString: String = maximum.toString

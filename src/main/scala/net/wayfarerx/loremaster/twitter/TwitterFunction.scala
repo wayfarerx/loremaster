@@ -1,6 +1,6 @@
-/* TweetFunction.scala
+/* TwitterFunction.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,10 +13,10 @@
 package net.wayfarerx.loremaster
 package twitter
 
-import twitter4j.TwitterFactory
-import twitter4j.conf.ConfigurationBuilder
+import com.amazonaws.services.lambda.runtime.RequestHandler
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
-import zio.{Has, RLayer, URIO, Task, ZLayer}
+import zio.{Has, RLayer, URIO, ZLayer}
 
 import aws.*
 import configuration.*
@@ -25,19 +25,25 @@ import logging.*
 /**
  * An AWS Kinesis Lambda function that posts books to Twitter,
  */
-final class TweetFunction extends SqsFunction[TweetFunction.Environment, TweetEvent](TweetFunction.Environment) :
+final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
+
+  /* The type of environment to use. */
+  override protected type Environment = TwitterFunction.Environment
+
+  /* The environment constructor to use. */
+  override protected def environment: RLayer[AwsEnv, Environment] = TwitterFunction.Environment
 
   /* Publish the specified book to Twitter. */
-  override protected def onMessage(event: TweetEvent): URIO[TweetFunction.Environment, Unit] =
-    URIO.service[TweetService] flatMap (_(event))
+  override protected def onMessage(event: TwitterEvent): URIO[Environment, Unit] =
+    URIO.service[TwitterService].flatMap(_ (event))
 
 /**
  * Definitions associated with tweet functions.
  */
-object TweetFunction:
+object TwitterFunction:
 
   /** The environment a tweet function operates in. */
-  type Environment = AwsEnv & Has[TweetService]
+  type Environment = AwsEnv & Has[TwitterService]
 
   /** A factory for tweet function environments. */
   val Environment: RLayer[AwsEnv, Environment] =
@@ -45,9 +51,9 @@ object TweetFunction:
       for
         config <- URIO.service[Configuration]
         logFactory <- URIO.service[LogFactory]
-        credentials <- TwitterCredentials(config)
-        twitter <- Task(TwitterFactory(credentials.configure(ConfigurationBuilder()).build).getInstance)
-        publisher <- SqsPublisher[TweetEvent](TweetEvent.Topic, config)
-        service <- TweetService(config, logFactory, twitter, publisher)
+        twitterConfig <- TwitterConfiguration(config)
+        client <- TwitterClient(twitterConfig, logFactory)
+        publisher <- SqsPublisher[TwitterEvent](config, TwitterEvent.Topic)
+        service <- TwitterService(twitterConfig, logFactory, client, publisher)
       yield service
     }

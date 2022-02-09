@@ -35,7 +35,7 @@ trait Configuration:
    */
   def apply[T: Configuration.Data](key: String): Task[T] = get(key) flatMap {
     case Some(data) => UIO(data)
-    case None => Task fail ConfigurationException(Messages.invalidConfiguration(key, Configuration.Data[T].`type`))
+    case None => Task.fail(ConfigurationException(Messages.invalidConfiguration(key, Configuration.Data[T].`type`)))
   }
 
   /**
@@ -56,7 +56,7 @@ trait Configuration:
    * @return The value of the specified configuration entry if it exists or the supplied default.
    */
   def getOrElse[T: Configuration.Data](key: String, default: => T): Task[T] =
-    get(key) map (_ getOrElse default)
+    get(key).map(_ getOrElse default)
 
 /**
  * Definitions associated with configurations.
@@ -74,7 +74,7 @@ object Configuration extends ((String => Task[Option[String]]) => Configuration)
    */
   override def apply(source: String => Task[Option[String]]): Configuration = new Configuration :
     override def get[T: Data](key: String): Task[Option[T]] =
-      source(key) map (_ flatMap Data[T].apply)
+      source(key).map(_ flatMap Data[T].apply)
 
   /**
    * Support for a specific type of configuration data.
@@ -166,7 +166,7 @@ object Configuration extends ((String => Task[Option[String]]) => Configuration)
      * @param f      The function that decodes data.
      * @return A new type of configuration data.
      */
-    inline def define[T](`type`: String)(f: String => Option[T]): Data[T] =
+    def define[T](`type`: String)(f: String => Option[T]): Data[T] =
       val _type = `type`
       new Data :
 

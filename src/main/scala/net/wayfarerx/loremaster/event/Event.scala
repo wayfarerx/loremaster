@@ -1,6 +1,6 @@
 /* Event.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -16,7 +16,7 @@ package event
 import java.time.Instant
 
 /**
- * A typeclass that describes events.
+ * A type class that describes events.
  *
  * @tparam T The type that is an event.
  */
@@ -31,10 +31,10 @@ trait Event[T]:
   def createdAt(event: T): Instant
 
   /**
-   * Returns the number of times the event has been previously attempted.
+   * Returns the number of times the event has previously been attempted.
    *
-   * @param event The event to return the number of times it has been previously attempted.
-   * @return The number of times the event has been previously attempted
+   * @param event The event to return the number of times it has previously been attempted.
+   * @return The number of times the event has previously been attempted.
    */
   def previousAttempts(event: T): Int
 
@@ -47,14 +47,14 @@ trait Event[T]:
   def nextAttempt(event: T): T
 
 /**
- * Factory for event typeclasses.
+ * Factory for event type classes.
  */
 object Event:
 
   /**
-   * Returns the given event typeclass for the specified type.
+   * Returns the given event type class for the specified type.
    *
    * @tparam T The type of event to use.
-   * @return The given event typeclass for the specified type.
+   * @return The given event type class for the specified type.
    */
   def apply[T: Event]: Event[T] = summon[Event[T]]

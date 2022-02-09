@@ -1,6 +1,6 @@
-/* TweetEvent.scala
+/* TwitterEvent.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -28,30 +28,36 @@ import model.*
  * @param createdAt The instant that this event was crated at.
  * @param retry     The retry count for this event.
  */
-case class TweetEvent(book: Book, createdAt: Instant = Instant.now, retry: Option[Int] = None)
+case class TwitterEvent(book: Book, createdAt: Instant = Instant.now, retry: Option[Int] = None)
 
 /**
  * Factory for tweet events.
  */
-object TweetEvent extends ((Book, Instant, Option[Int]) => TweetEvent) :
+object TwitterEvent extends ((Book, Instant, Option[Int]) => TwitterEvent) :
 
   /** The encoding of tweet events to JSON. */
-  given Encoder[TweetEvent] = deriveEncoder[TweetEvent] mapJson (_.dropNullValues)
+  given Encoder[TwitterEvent] = deriveEncoder[TwitterEvent].mapJson(_.dropNullValues)
 
   /** The decoding of tweet events from JSON. */
-  given Decoder[TweetEvent] = deriveDecoder
+  given Decoder[TwitterEvent] = deriveDecoder
 
   /** Support for retrying tweet events. */
-  given Event[TweetEvent] = new Event[TweetEvent] :
+  given Event[TwitterEvent] = new Event[TwitterEvent] :
 
     /* Return the instant the event was originally created at. */
-    override def createdAt(event: TweetEvent): Instant = event.createdAt
+    override def createdAt(event: TwitterEvent): Instant = event.createdAt
 
     /* Return the number of times the event has been previously attempted. */
-    override def previousAttempts(event: TweetEvent): Int = event.retry.fold(1)(retry => math.max(1, retry + 1))
+    override def previousAttempts(event: TwitterEvent): Int = event.retry.fold(0)(math.max(0, _))
 
     /* Return the specified event with its retry count incremented. */
-    override def nextAttempt(event: TweetEvent): TweetEvent = event.copy(retry = Some(previousAttempts(event)))
+    override def nextAttempt(event: TwitterEvent): TwitterEvent = event.copy(retry = Some(previousAttempts(event) + 1))
 
-  /** The name of the tweet event topic. */
-  val Topic: String = s"$TwitterPrefix.events"
+  /** The Twitter event topic variable name. */
+  val Topic: String = "TwitterEvents"
+
+  def main(args: Array[String]): Unit = println {
+    cats.data.NonEmptyList.fromList(args.toList).fold("") { input =>
+      Encoder[TwitterEvent].apply(TwitterEvent(Book(input))).spaces2
+    }
+  }

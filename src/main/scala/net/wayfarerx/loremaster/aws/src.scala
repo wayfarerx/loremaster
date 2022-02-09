@@ -24,6 +24,6 @@ type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
 
 /** Factory for AWS environments. */
 val AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
-  val config = ZLayer.fromService(Configuration apply (_: System.Service).env)
+  val config = ZLayer.fromService((sys: System.Service) => Configuration(sys.env))
   val logs = config ++ ZLayer.requires[Has[LogEmitter]] >>> ZLayer.fromServices(LogFactory(_, _))
   ZLayer.requires[ZEnv] ++ config ++ logs

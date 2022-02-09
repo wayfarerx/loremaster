@@ -1,6 +1,6 @@
 /* Token.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -40,16 +40,16 @@ object Token:
 
   /** The given encoding of tokens to JSON. */
   given Encoder[Token] = Encoder instance {
-    case text: Text => Encoder[Text] apply text
-    case name: Name => Encoder[Name] apply name
+    case text: Text => Encoder[Text].apply(text)
+    case name: Name => Encoder[Name].apply(name)
   }
 
   /** The given decoding of tokens from JSON. */
   given Decoder[Token] = List[Decoder[Token]](
     Decoder[Text].widen,
     Decoder[Name].widen,
-    Decoder failedWithMessage Messages.invalidToken()
-  ).reduceLeft(_ or _)
+    Decoder.failedWithMessage(Messages.invalidToken)
+  ).reduceLeft((l, r) => l.or(r))
 
   /**
    * Compares two strings, returning their differnce or the default if they are the same.
@@ -127,7 +127,7 @@ object Token:
       given Ordering[Category] = _.ordinal - _.ordinal
 
       /** The encoding of name categories to JSON. */
-      given Encoder[Category] = Encoder[String] contramap (_.toString.toLowerCase)
+      given Encoder[Category] = Encoder[String].contramap(_.toString.toLowerCase)
 
       /** The decoding of name categories from JSON. */
       given Decoder[Category] = Decoder[String] emap { category =>

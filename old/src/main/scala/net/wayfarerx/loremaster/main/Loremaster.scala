@@ -13,18 +13,14 @@
 package net.wayfarerx.loremaster
 package main
 
+import net.wayfarerx.loremaster.http.Http
+
 import java.net.URI
-
 import scala.concurrent.duration.*
-
-import scopt.OptionParser
-
 import zio.{Has, RIO, Task, URIO, ZEnv, ZLayer}
 import zio.clock.Clock
 import zio.console.putStrLn
 import zio.system.System
-
-import service.*
 
 /**
  * The main entry point for the Loremaster application.
@@ -36,7 +32,7 @@ object Loremaster extends zio.App :
     Has[Configuration] &
     Has[Log.Factory] &
     Has[Storage] &
-    Has[Https] &
+    Has[Http] &
     Has[Zeitgeist] &
     Has[Analysis] &
     Has[Library] &

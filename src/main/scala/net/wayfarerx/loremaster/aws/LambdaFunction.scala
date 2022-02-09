@@ -20,21 +20,33 @@ import zio.{RIO, RLayer, Runtime, UIO, ZEnv, ZLayer}
 import logging.*
 
 /**
- * Base type for AWS Lambda functions that operate in the specified environment.
+ * Base type for Lambda functions.
  *
- * @tparam E The environment this AWS Lambda function operates in.
- * @tparam R The type of request this AWS Lambda function handles.
+ * @tparam R The type of request this Lambda function handles.
  */
-trait LambdaFunction[E <: AwsEnv, R] extends RequestHandler[R, String] with (R => RIO[E, Unit]):
+trait LambdaFunction[R]:
+  self: RequestHandler[R, String] =>
+
+  /** The type of environment to use. */
+  protected type Environment <: AwsEnv
 
   /** The environment constructor to use. */
-  protected def environment: RLayer[AwsEnv, E]
+  protected def environment: RLayer[AwsEnv, Environment]
+
+  /**
+   * Handles a Lambda request with the provided environment.
+   *
+   * @param request The request to handle.
+   * @return The environment-dependant request handler.
+   */
+  protected def apply(request: R): RIO[Environment, Unit]
 
   /* Handle a Lambda request. */
   final override def handleRequest(request: R, context: Context): String =
     val logger = context.getLogger
     Runtime.default unsafeRunTask {
-      apply(request) map (_ => Messages.okay) provideLayer
-        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter formatted (UIO apply logger.log(_))) >>>
+      apply(request).map(_ => Messages.okay).provideLayer {
+        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(msg => UIO(logger.log(msg)))) >>>
           AwsEnv >>> environment
+      }
     }

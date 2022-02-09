@@ -11,7 +11,7 @@ lazy val root = project.in(file(".")).settings(
   scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores"),
 
   libraryDependencies ++= Seq(
-    // API
+    // Core
     CatsCore,
     CirceCore,
     CirceGeneric,
@@ -21,8 +21,6 @@ lazy val root = project.in(file(".")).settings(
     AwsLambdaCore,
     AwsLambdaEvents,
     AwsSqs,
-    // Tweeting
-    Twitter4j,
     // Testing
     ScalaTest,
     Mockito

@@ -1,6 +1,6 @@
 /* Messages.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -13,29 +13,31 @@
 package net.wayfarerx.loremaster
 package twitter
 
+import scala.concurrent.duration.*
+
 /**
- * The messages provided by the AWS package.
+ * The messages provided by the twitter package.
  */
 private object Messages {
 
-  def beforeTweeting: String = "Before tweeting"
+  def beforeTwitterEvent: String = "Before Twitter event"
 
-  def afterTweeting: String = "After tweeting"
+  def afterTwitterEvent: String = "After Twitter event"
 
-  def postingTweet: String = "Posting tweet"
+  def tweeted(event: TwitterEvent): String =
+    s"Tweeted: ${format(event)}"
 
-  def postedTweet: String = "Posted tweet"
+  def retryingTweet(event: TwitterEvent, delay: FiniteDuration): String =
+    s"Retrying tweet after $delay: ${format(event)}"
 
-  def retryingTweet: String = "Retrying failed tweet"
+  def failedToTweet(event: TwitterEvent): String =
+    s"Failed to tweet: ${format(event)}"
 
-  def retriedTweet: String = "Retried failed tweet"
+  def tweetFailedException(problem: TwitterProblem): String =
+    val messages = if problem.messages.isEmpty then "" else s" => ${problem.messages mkString ", "}"
+    s"Tweet failed: ${problem.title}: ${problem.detail} (${problem._type})$messages."
 
-  def networkUnavailable: String = "Cannot to connect to Twitter"
-
-  def rateLimitExceeded: String = "Twitter rate limit exceeded"
-
-  def unexpectedFailure: String = "Unexpected Twitter failure"
-
-  def failedToTweet(event: TweetEvent): String = s"Failed to tweet: ${event.book.paragraphs.iterator mkString " "}"
+  private[this] def format(event: TwitterEvent): String =
+    event.book.paragraphs.iterator mkString " "
 
 }
