@@ -13,12 +13,12 @@
 package net.wayfarerx.loremaster
 package deploy
 
-import io.circe.Json
-import io.circe.Json.{arr, obj}
-
 import scala.collection.immutable.ListMap
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
+
+import io.circe.Json
+import Json.{arr, obj}
 
 /**
  * Base type for participants in the deployment process.
@@ -160,7 +160,7 @@ trait Deployment:
   /** Generates the resources provided by this deployment. */
   def resources: ListMap[String, Json] = ListMap.empty
 
-  // Utilities
+  // Functions
 
   /**
    * Generates JSON that resolves the specified attribute.
@@ -353,7 +353,7 @@ trait Deployment:
    * @tparam T The type of event the mapping manages.
    * @return An SQS to Lambda event source mapping definition.
    */
-  protected final def queueFunctionMapping[T: ClassTag]: ListMap[String, Json] =
+  protected final def eventHandler[T: ClassTag]: ListMap[String, Json] =
     val _queueName = queueName[T]
     val _functionName = functionName[T]
     val _mappingName = mappingName[T]

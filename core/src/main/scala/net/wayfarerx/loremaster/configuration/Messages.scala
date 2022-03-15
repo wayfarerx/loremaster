@@ -18,5 +18,5 @@ package configuration
  */
 private object Messages:
 
-  def undefinedConfiguration(key: String, `type`: String): String =
-    s"Configuration $key of type ${`type`} is not defined"
+  def configurationNotFound(key: String, `type`: String): String =
+    s"""Could not find configuration "$key" of type "${`type`}""""

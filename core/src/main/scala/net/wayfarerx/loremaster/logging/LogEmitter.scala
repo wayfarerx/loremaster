@@ -25,6 +25,9 @@ trait LogEmitter extends ((Log.Level, String, Option[Throwable]) => UIO[Unit])
  */
 object LogEmitter extends (((Log.Level, String, Option[Throwable]) => UIO[Unit]) => LogEmitter) :
 
+  /** A log emitter that never emits anything. */
+  val NoOp: LogEmitter = apply((_, _, _) => UIO.unit)
+
   /** The maximum length of log level strings. */
   private[this] val MaxLevelLength = Log.Level.values.map(_.toString.size).max
 

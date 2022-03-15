@@ -31,7 +31,7 @@ import model.*
 case class TwitterEvent(book: Book, createdAt: Instant = Instant.now, retry: Option[Int] = None) :
 
   /** Returns the next incarnation of this event. */
-  def next: TwitterEvent = copy(retry = retry.fold(Some(1))(attempts => Some(Math.max(0, attempts) + 1)))
+  def next: TwitterEvent = copy(retry = Some(retry.fold(1)(r => Math.max(0, r) + 1)))
 
 /**
  * Factory for tweet events.

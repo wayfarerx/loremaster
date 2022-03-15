@@ -18,22 +18,34 @@ package deploy
  */
 private object Messages {
 
-  def description: String = s"The $Loremaster deployment stack."
+  // AWS
 
-  def awsAccountId: String = s"The AWS Account ID to use for $Loremaster."
+  def failedToDecodeSqsMessage(message: String): String = s"Failed to decode SQS message: $message"
 
-  def awsS3Bucket: String = s"The AWS S3 bucket where the $Loremaster code is stored."
+  def failedToHandleSqsMessage(message: String): String = s"Failed to handle SQS message: $message"
 
-  def awsS3Key: String = s"The AWS S3 key where the $Loremaster code is stored."
+  def securityException(thrown: SecurityException): String = s"Encountered security exception: ${thrown.getMessage}"
 
-  def twitterBearerToken: String = s"The $Loremaster Twitter bearer token."
+  // Strings
 
-  def twitterConnectionTimeout: String = s"The $Loremaster Twitter connection timeout."
+  def okay: String = "200 OK"
 
-  def twitterRetryPolicy: String = s"The $Loremaster Twitter retry policy."
+  def description: String = s"The $Application deployment stack."
+
+  def awsAccountId: String = s"The AWS Account ID to use for $Application."
+
+  def awsS3Bucket: String = s"The AWS S3 bucket where the $Application code is stored."
+
+  def awsS3Key: String = s"The AWS S3 key where the $Application code is stored."
+
+  def twitterBearerToken: String = s"The $Application Twitter bearer token."
+
+  def twitterConnectionTimeout: String = s"The $Application Twitter connection timeout."
+
+  def twitterRetryPolicy: String = s"The $Application Twitter retry policy."
 
   def failedToWriteAwsCloudFormationTemplate(thrown: Throwable): String =
-    s"Failed to write AWS CloudFormation template for $Loremaster: ${thrown.getClass.getSimpleName}(${
+    s"Failed to write AWS CloudFormation template for $Application: ${thrown.getClass.getSimpleName}(${
       Option(thrown.getMessage) getOrElse ""
     })"
 

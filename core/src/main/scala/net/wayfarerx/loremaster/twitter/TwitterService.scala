@@ -32,8 +32,8 @@ object TwitterService extends ((Retries, Log, TwitterClient, Publisher[TwitterEv
   /**
    * Creates an implementation of the Twitter service.
    *
-   * @param log       The log to use.
    * @param retries   The retry policy to use.
+   * @param log       The log to use.
    * @param client    The Twitter client to use.
    * @param publisher The tweet publisher to retry with.
    * @return An implementation of the Twitter service.
@@ -48,7 +48,7 @@ object TwitterService extends ((Retries, Log, TwitterClient, Publisher[TwitterEv
     _ <- (client.postTweet(event.book) *> log.info(Messages.tweeted(event))).catchSome {
       case problem if problem.shouldRetry =>
         retries(event).fold(Task.fail(problem)) { delay =>
-          log.info(Messages.retryingTweet(event, delay)) *> publisher(event.next, delay)
+          log.warn(Messages.retryingTweet(event, delay)) *> publisher(event.next, delay)
         }
     }.catchAll(log.error(Messages.failedToTweet(event), _))
     _ <- log.trace(Messages.afterTwitterEvent)

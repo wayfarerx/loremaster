@@ -16,11 +16,12 @@ package deployment
 
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 
-import zio.{Has, RLayer, URIO, ZLayer}
+import zio.{Has, RLayer, Task, URIO, ZLayer}
 
-import aws.*
 import configuration.*
+import deploy.*
 import event.*
 import http.*
 import logging.*
@@ -28,33 +29,28 @@ import logging.*
 /**
  * An AWS Kinesis Lambda function that posts books to Twitter,
  */
-final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
+final class TwitterFunction extends SqsFunction[TwitterEvent] :
 
   /* The type of environment to use. */
-  override protected type Environment = TwitterFunction.Environment
+  override type Environment = AwsEnv & Has[TwitterService]
 
   /* The environment constructor to use. */
-  override protected def environment: RLayer[AwsEnv, Environment] = TwitterFunction.Environment
+  override def environment: RLayer[AwsEnv, Environment] =
+    ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
+      for
+        config <- URIO.service[Configuration]
+        twitterConfig <- TwitterConfiguration(config)
+        logFactory <- URIO.service[LogFactory]
+        log <- logFactory.log[TwitterService]
+        client <- Http(twitterConfig.connectionTimeout).map(TwitterClient(twitterConfig.bearerToken, _))
+      yield TwitterService(
+        twitterConfig.retryPolicy getOrElse Retries.Default,
+        log,
+        client,
+        SqsPublisher[TwitterEvent](twitterConfig.queueName)
+      )
+    }
 
   /* Publish the specified book to Twitter. */
   override protected def onMessage(event: TwitterEvent): URIO[Environment, Unit] =
     URIO.service[TwitterService].flatMap(_ (event))
-
-/**
- * Definitions associated with tweet functions.
- */
-object TwitterFunction:
-
-  /** The environment a tweet function operates in. */
-  type Environment = AwsEnv & Has[TwitterService]
-
-  /** A factory for tweet function environments. */
-  val Environment: RLayer[AwsEnv, Environment] =
-    ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
-      for
-        config <- URIO.service[Configuration].flatMap(TwitterConfiguration(_))
-        log <- URIO.service[LogFactory].flatMap(_.log[TwitterService])
-        client <- Http(config.connectionTimeout).map(TwitterClient(config.bearerToken, _))
-        publisher <- SqsPublisher[TwitterEvent](config.queueName)
-      yield TwitterService(config.retryPolicy getOrElse Retries.Default, log, client, publisher)
-    }

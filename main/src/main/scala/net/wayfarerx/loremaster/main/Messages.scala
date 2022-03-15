@@ -19,10 +19,10 @@ package main
 private object Messages {
 
   /** The description of this application. */
-  def description: String = s"The $Loremaster deployment stack."
+  def description: String = s"The $Application deployment stack."
 
   /** The usage of this application. */
-  def usage: String = s"Usage: $Loremaster <cloudformation.json>"
+  def usage: String = s"Usage: $Application <cloudformation.json>"
 
   /**
    * The message that describes a failure to write an AWS CloudFormation template.
@@ -31,7 +31,7 @@ private object Messages {
    * @return The message that describes a failure to write an AWS CloudFormation template.
    */
   def failedToWriteAwsCloudFormationTemplate(thrown: Throwable): String =
-    s"Failed to write AWS CloudFormation template for $Loremaster: ${thrown.getClass.getSimpleName}(${
+    s"Failed to write AWS CloudFormation template for $Application: ${thrown.getClass.getSimpleName}(${
       Option(thrown.getMessage) getOrElse ""
     })"
 

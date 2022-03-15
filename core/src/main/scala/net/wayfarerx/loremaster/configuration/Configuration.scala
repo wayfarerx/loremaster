@@ -37,7 +37,7 @@ trait Configuration:
    */
   def apply[T: Data](key: String): IO[ConfigurationProblem, T] = get(key) flatMap {
     case Some(data) => UIO(data)
-    case None => IO.fail(ConfigurationProblem(Messages.undefinedConfiguration(key, Data[T].`type`)))
+    case None => IO.fail(ConfigurationProblem(Messages.configurationNotFound(key, Data[T].`type`)))
   }
 
   /**

@@ -17,7 +17,7 @@ import scala.reflect.ClassTag
 
 import zio.{Task, UIO}
 
-import configuration.Configuration
+import configuration.*
 
 /**
  * Definition of the log factory API.
@@ -25,19 +25,12 @@ import configuration.Configuration
 trait LogFactory extends (String => Task[Log]) :
 
   /**
-   * Returns the global log.
-   *
-   * @return The global log.
-   */
-  def apply(): Task[Log] = apply("")
-
-  /**
    * Creates a log for the specified class.
    *
    * @param cls The class to create the log for.
    * @return A log for the specified class.
    */
-  def apply(cls: Class[_]): Task[Log] = apply(cls.getSimpleName)
+  final def apply(cls: Class[_]): Task[Log] = apply(cls.getSimpleName)
 
   /**
    * Creates a log for the specified type.
@@ -65,15 +58,20 @@ object LogFactory extends ((Configuration, LogEmitter) => LogFactory) :
    * @param emitter The emitter to use.
    * @return A log factory backed by a configuration and an emitter.
    */
-  override def apply(config: Configuration, emitter: LogEmitter): LogFactory =
+  override def apply(config: Configuration, emitter: LogEmitter): LogFactory = (name: String) =>
+    val path = Separators.split(name).iterator.filterNot(_.isEmpty).toVector
+    configuredThreshold(config, path).map(Log(path mkString ".", _, emitter))
 
-    def findThreshold(components: Vector[String]): Task[Log.Level] =
-      if components.isEmpty then config.get[Log.Level](Key) map (_ getOrElse Log.Level.Warn) else for
-        threshold <- config.get[Log.Level](components.mkString("", ".", s".$Key"))
-        result <- threshold.fold(findThreshold(components.init))(UIO(_))
+  /**
+   * Returns the configured logging threshold of the specified path.
+   *
+   * @param config The configuration to use.
+   * @param path The path to return the logging threshold of.
+   * @return The configured logging threshold of the specified path.
+   */
+  private[this] def configuredThreshold(config: Configuration, path: Vector[String]): Task[Log.Level] =
+    if path.isEmpty then config.get[Log.Level](Key).map(_ getOrElse Log.Level.Warn) else
+      for
+        threshold <- config.get[Log.Level](path.mkString("", ".", s".$Key"))
+        result <- threshold.fold(configuredThreshold(config, path.init))(UIO(_))
       yield result
-
-    new LogFactory :
-      override def apply(name: String): Task[Log] =
-        val components = Separators.split(name).iterator.filterNot(_.isEmpty).toVector
-        findThreshold(components) map (Log(components mkString ".", _, emitter))

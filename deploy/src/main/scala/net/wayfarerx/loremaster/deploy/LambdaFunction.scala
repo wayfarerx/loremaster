@@ -11,25 +11,30 @@
  */
 
 package net.wayfarerx.loremaster
-package aws
+package deploy
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
+
 import zio.{RIO, RLayer, Runtime, UIO, ZEnv, ZLayer}
-import logging.{Messages, *}
+
+import logging.*
 
 /**
  * Base type for Lambda functions.
  *
- * @tparam R The type of request this Lambda function handles.
+ * @tparam T The type of request this Lambda function produces.
  */
-trait LambdaFunction[R]:
-  self: RequestHandler[R, String] =>
+trait LambdaFunction[T] extends RequestHandler[T, String] :
 
-  /** The type of environment to use. */
-  protected type Environment <: AwsEnv
+  /**
+   * The type of environment to use.
+   */
+  type Environment <: AwsEnv
 
-  /** The environment constructor to use. */
-  protected def environment: RLayer[AwsEnv, Environment]
+  /**
+   * The environment constructor to use.
+   */
+  def environment: RLayer[AwsEnv, Environment]
 
   /**
    * Handles a Lambda request with the provided environment.
@@ -37,14 +42,14 @@ trait LambdaFunction[R]:
    * @param request The request to handle.
    * @return The environment-dependant request handler.
    */
-  protected def apply(request: R): RIO[Environment, Unit]
+  def apply(request: T): RIO[Environment, Unit]
 
   /* Handle a Lambda request. */
-  final override def handleRequest(request: R, context: Context): String =
+  final override def handleRequest(request: T, context: Context): String =
     val logger = context.getLogger
     Runtime.default unsafeRunTask {
-      apply(request).map(_ => Messages.okay).provideLayer {
-        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(msg => UIO(logger.log(msg)))) >>>
-          AwsEnv >>> environment
-      }
+      apply(request).provideLayer {
+        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(msg => UIO(logger.log(msg))))
+          >>> AwsEnv >>> environment
+      }.map(_ => Messages.okay)
     }

@@ -49,14 +49,15 @@ object TwitterClient extends ((String, Http) => TwitterClient) :
    * @param http        The http service to use when connecting to Twitter.
    * @return A new Twitter client.
    */
-  override def apply(bearerToken: String, http: Http): TwitterClient = book =>
+  override def apply(bearerToken: String, http: Http): TwitterClient = book => {
     http.post(
       TweetsEndpoint,
       emitJson(Body(text = Some(book.toString))),
       "Authorization" -> s"Bearer $bearerToken", "Content-Type" -> "application/json"
-    ).catchAll { problem =>
-      IO.fail(TwitterProblem(Messages.twitterFailure(problem.message), Some(problem), problem.shouldRetry))
-    } *> IO.unit
+    ) *> IO.unit
+  } catchAll { problem =>
+    IO.fail(TwitterProblem(Messages.twitterFailure(problem.message), Some(problem), problem.shouldRetry))
+  }
 
   /**
    * The body of a tweet.

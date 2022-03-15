@@ -13,8 +13,6 @@
 package net.wayfarerx.loremaster
 package logging
 
-import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger}
-
 import zio.{Runtime, UIO}
 
 import org.scalatest.*
@@ -43,7 +41,7 @@ class LogEmitterTest extends AnyFlatSpec with should.Matchers :
       _ <- emitter(Log.Level.Error, "error", None)
       _ <- emitter(Log.Level.Error, "error", Some(thrownA))
     yield ()
-    Runtime.default unsafeRunTask effect shouldBe()
+    Runtime.default.unsafeRunTask(effect) shouldBe()
     emitted shouldBe List(
       "TRACE trace.",
       "TRACE trace, caused by RuntimeException.",

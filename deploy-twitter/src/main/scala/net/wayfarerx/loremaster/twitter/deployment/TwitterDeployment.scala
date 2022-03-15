@@ -44,4 +44,4 @@ trait TwitterDeployment extends Deployment :
         TwitterConfiguration.RetryPolicy -> ref(TwitterConfiguration.RetryPolicy)
       )
     ) ++
-    queueFunctionMapping[TwitterEvent]
+    eventHandler[TwitterEvent]

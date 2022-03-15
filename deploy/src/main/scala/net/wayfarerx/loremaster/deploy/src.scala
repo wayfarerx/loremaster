@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package aws
+package deploy
 
 import zio.{Has, IO, RLayer, ZEnv, ZLayer}
 import zio.system.System
@@ -20,16 +20,16 @@ import configuration.*
 import logging.*
 
 /** The type of environment that AWS effects operate in. */
-type AwsEnv = ZEnv & Has[LogFactory] & Has[Configuration]
+type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
 
 /** Factory for AWS environments. */
 val AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
   val config = ZLayer.fromService { (sys: System.Service) =>
     Configuration { key =>
       sys.env(key) catchAll { thrown =>
-        IO.fail(ConfigurationProblem(aws.Messages.securityException(thrown), Some(thrown)))
+        IO.fail(ConfigurationProblem(Messages.securityException(thrown), Some(thrown)))
       }
     }
   }
   val logs = config ++ ZLayer.requires[Has[LogEmitter]] >>> ZLayer.fromServices(LogFactory(_, _))
-  ZLayer.requires[ZEnv] ++ logs ++ config
+  ZLayer.requires[ZEnv] ++ config ++ logs

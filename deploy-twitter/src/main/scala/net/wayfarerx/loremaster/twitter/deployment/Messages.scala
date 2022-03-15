@@ -19,10 +19,10 @@ package deployment
  */
 private object Messages:
 
-  def bearerToken: String = s"The $Loremaster Twitter bearer token."
+  def bearerToken: String = s"The $Application Twitter bearer token."
 
-  def connectionTimeout: String = s"The $Loremaster Twitter connection timeout."
+  def connectionTimeout: String = s"The $Application Twitter connection timeout."
 
-  def retryPolicy: String = s"The $Loremaster Twitter retry policy."
+  def retryPolicy: String = s"The $Application Twitter retry policy."
 
-  def functionDescription: String = s"The function that handles $Loremaster Twitter events."
+  def functionDescription: String = s"The function that handles $Application Twitter events."

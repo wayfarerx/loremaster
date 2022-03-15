@@ -28,25 +28,20 @@ class LogFactoryTest extends AnyFlatSpec with should.Matchers :
 
   "A log factory" should "create configured log services" in {
     val config = Configuration {
-      case "LogFactoryTest.log.level" => UIO some Log.Level.Debug.toString
+      case "LogFactoryTest.log.level" => UIO.some(Log.Level.Debug.toString)
       case _ => UIO.none
     }
     var emitted = Vector.empty[(Log.Level, String, Option[Throwable])]
     val logs = LogFactory(config, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
     val effect = for
-      global <- logs()
-      _ <- global.trace("trace")
-      _ <- global.info("info")
-      _ <- global.error("error")
-      local <- logs.log[LogFactoryTest]
-      _ <- local.trace("trace")
-      _ <- local.info("info")
-      _ <- local.error("error")
+      log <- logs.log[LogFactoryTest]
+      _ <- log.trace("trace")
+      _ <- log.info("info")
+      _ <- log.error("error")
     yield ()
-    Runtime.default unsafeRunTask effect shouldBe()
+    Runtime.default.unsafeRunTask(effect) shouldBe()
     emitted shouldBe Vector(
-      (Log.Level.Error, "error", None),
-      (Log.Level.Info, "LogFactoryTest: info", None),
-      (Log.Level.Error, "LogFactoryTest: error", None)
+      (Log.Level.Info, s"${classOf[LogFactoryTest].getSimpleName}: info", None),
+      (Log.Level.Error, s"${classOf[LogFactoryTest].getSimpleName}: error", None)
     )
   }

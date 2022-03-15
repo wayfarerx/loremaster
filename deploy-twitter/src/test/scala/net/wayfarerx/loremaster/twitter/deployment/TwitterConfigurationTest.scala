@@ -12,6 +12,7 @@
 
 package net.wayfarerx.loremaster
 package twitter
+package deployment
 
 import scala.concurrent.duration.*
 
@@ -28,27 +29,27 @@ import matchers.*
  */
 class TwitterConfigurationTest extends AnyFlatSpec with should.Matchers :
 
-  /** Test Twitter credentials. */
-  private val testConfig = TwitterConfiguration(
+  /** Small test Twitter credentials. */
+  private val smallConfig = TwitterConfiguration(
     "queueUrl",
     "bearerToken"
   )
 
-  /** Test Twitter credentials. */
+  /** Full test Twitter credentials. */
   private val fullConfig = TwitterConfiguration(
-    testConfig.queueName,
-    testConfig.bearerToken,
+    smallConfig.queueName,
+    smallConfig.bearerToken,
     Some(10.seconds),
     Some(event.Retries.Default)
   )
 
   "Twitter credentials" should "read from the configuration" in {
-    val _testConfig = Configuration {
-      case TwitterConfiguration.QueueName => UIO.some(testConfig.queueName)
-      case TwitterConfiguration.BearerToken => UIO.some(testConfig.bearerToken)
+    val _smallConfig = Configuration {
+      case TwitterConfiguration.QueueName => UIO.some(smallConfig.queueName)
+      case TwitterConfiguration.BearerToken => UIO.some(smallConfig.bearerToken)
       case _ => UIO.none
     }
-    Runtime.default.unsafeRunTask(TwitterConfiguration(_testConfig)) shouldBe testConfig
+    Runtime.default.unsafeRunTask(TwitterConfiguration(_smallConfig)) shouldBe smallConfig
     val _fullConfig = Configuration {
       case TwitterConfiguration.QueueName => UIO.some(fullConfig.queueName)
       case TwitterConfiguration.BearerToken => UIO.some(fullConfig.bearerToken)

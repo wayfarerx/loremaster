@@ -12,20 +12,13 @@
 
 package net.wayfarerx.loremaster
 
-import cats.data.NonEmptyList
-
 import io.circe.{Decoder, Encoder, parser}
 
-/** The given non empty list encoder. */
-given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]].contramap(_.toList)
+/** The name of the application. */
+val Application: String = "Loremaster"
 
-/** The given non empty list decoder. */
-given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap { list =>
-  NonEmptyList.fromList(list) toRight s"Unable to decode non-empty list from ${list.mkString("[", ", ", "]")}"
-}
-
-/** The name of the Loremaster application. */
-val Loremaster: String = "Loremaster"
+/** The version of the application. */
+val Version: String = "0.x"
 
 /**
  * Describes a throwable.

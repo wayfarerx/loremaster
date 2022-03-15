@@ -75,7 +75,7 @@ object Http extends (HttpClient => Http) :
 
   /** The headers to include in every HTTP request. */
   private[http] val CommonHeaders: Map[String, String] = Map(
-    "User-Agent" -> Loremaster
+    "User-Agent" -> Application
   )
 
   /**

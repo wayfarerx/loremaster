@@ -12,6 +12,7 @@
 
 package net.wayfarerx.loremaster
 package twitter
+package deployment
 
 import scala.concurrent.duration.*
 
@@ -42,16 +43,16 @@ object TwitterConfiguration
   extends ((String, String, Option[FiniteDuration], Option[Retries]) => TwitterConfiguration) :
 
   /** The Twitter queue name variable name. */
-  val QueueName: String = s"${Twitter}QueueName"
+  val QueueName: String = "TwitterQueueName"
 
   /** The Twitter bearer token variable name. */
-  val BearerToken: String = s"${Twitter}BearerToken"
+  val BearerToken: String = "TwitterBearerToken"
 
   /** The Twitter connection timeout variable name. */
-  val ConnectionTimeout: String = s"${Twitter}ConnectionTimeout"
+  val ConnectionTimeout: String = "TwitterConnectionTimeout"
 
   /** The Twitter retry policy variable name. */
-  val RetryPolicy = s"${Twitter}RetryPolicy"
+  val RetryPolicy = "TwitterRetryPolicy"
 
   /**
    * Creates configured Twitter credentials.

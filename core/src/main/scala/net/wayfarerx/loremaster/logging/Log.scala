@@ -154,6 +154,12 @@ object Log extends ((String, Log.Level, LogEmitter) => Log) :
       else emitter(level, if name.isEmpty then message else s"$name: $message", thrown)
     }
 
+  /**
+   * Creates a log backed by a function.
+   *
+   * @param f The function that handles a log entry.
+   * @return A log backed by a function.
+   */
   def define(f: (Level, String, Option[Throwable]) => UIO[Unit]): Log = f(_, _, _)
 
   /** The definition of the supported logging levels. */
@@ -174,12 +180,4 @@ object Log extends ((String, Log.Level, LogEmitter) => Log) :
     given Ordering[Level] = _.ordinal - _.ordinal
 
     /** The given configuration data support for log levels. */
-    given Configuration.Data[Level] = Configuration.Data.define("Log.Level")(decode)
-
-    /**
-     * Decodes a log level from a string.
-     *
-     * @param string The string to decode a log level from.
-     * @return A log level decoded from the specified string.
-     */
-    def decode(string: String): Option[Level] = index get string.toLowerCase
+    given Configuration.Data[Level] = Configuration.Data.define("Log.Level")(index get _.toLowerCase)
