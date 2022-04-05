@@ -18,35 +18,15 @@ package deploy
  */
 private object Messages {
 
-  // AWS
-
-  def failedToDecodeSqsMessage(message: String): String = s"Failed to decode SQS message: $message"
-
-  def failedToHandleSqsMessage(message: String): String = s"Failed to handle SQS message: $message"
-
-  def securityException(thrown: SecurityException): String = s"Encountered security exception: ${thrown.getMessage}"
-
-  // Strings
-
   def okay: String = "200 OK"
 
-  def description: String = s"The $Application deployment stack."
+  def failedToAccessConfiguration(key: String, thrown: Throwable): String =
+    s"""Failed to access configuration "$key": ${describe(thrown)}"""
 
-  def awsAccountId: String = s"The AWS Account ID to use for $Application."
+  def failedToDeliverSqsMessage(message: String): String =
+    s"Failed to deliver SQS message: $message"
 
-  def awsS3Bucket: String = s"The AWS S3 bucket where the $Application code is stored."
-
-  def awsS3Key: String = s"The AWS S3 key where the $Application code is stored."
-
-  def twitterBearerToken: String = s"The $Application Twitter bearer token."
-
-  def twitterConnectionTimeout: String = s"The $Application Twitter connection timeout."
-
-  def twitterRetryPolicy: String = s"The $Application Twitter retry policy."
-
-  def failedToWriteAwsCloudFormationTemplate(thrown: Throwable): String =
-    s"Failed to write AWS CloudFormation template for $Application: ${thrown.getClass.getSimpleName}(${
-      Option(thrown.getMessage) getOrElse ""
-    })"
+  def failedToParseSqsMessage(message: String): String =
+    s"Failed to parse SQS message: $message"
 
 }

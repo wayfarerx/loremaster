@@ -33,19 +33,18 @@ object Main extends App :
   /* Write the generated template to the specified file. */
   override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
     args match
-      case file :: Nil =>
-        ZManaged.fromAutoCloseable(Task(PrintWriter(File(file), StandardCharsets.UTF_8.toString))).use { writer =>
-          Task {
-            writer.write(emitJson(obj(
-              "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
-              "Description" -> fromString(Messages.description),
-              "Parameters" -> fromFields(deployment.parameters),
-              "Resources" -> fromFields(deployment.resources)
-            )))
-          }
-        }.map(_ => ExitCode.success) catchAll { thrown =>
-          console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown)) *> UIO(ExitCode.failure)
-        }
-      case _ =>
-        console.putStrLnErr(Messages.usage) *> UIO(ExitCode.failure)
+      case Nil => ZManaged.succeed(System.out)
+      case file :: Nil => ZManaged.fromAutoCloseable(Task(PrintWriter(File(file), StandardCharsets.UTF_8.toString)))
+      case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
+  }.use { output =>
+    Task {
+      output.append(emitJson(obj(
+        "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
+        "Description" -> fromString(Messages.description),
+        "Parameters" -> fromFields(deployment.parameters),
+        "Resources" -> fromFields(deployment.resources)
+      )))
+    }
+  }.map(_ => ExitCode.success).catchAll { thrown =>
+    console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown)) *> UIO(ExitCode.failure)
   }.catchAll(UIO.die(_))

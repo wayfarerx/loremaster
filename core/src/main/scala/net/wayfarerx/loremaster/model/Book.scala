@@ -1,6 +1,6 @@
 /* Book.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -58,4 +58,4 @@ object Book extends (NonEmptyList[String] => Book):
    * @return A book with the specified paragraphs.
    */
   def from[F[_] : Foldable](paragraphs: F[String]): Option[Book] =
-    NonEmptyList fromFoldable paragraphs map apply
+    NonEmptyList.fromFoldable(paragraphs) map apply

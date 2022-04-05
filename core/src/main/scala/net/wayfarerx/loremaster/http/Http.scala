@@ -71,7 +71,7 @@ object Http extends (HttpClient => Http) :
   type Headers = Map[String, List[String]]
 
   /** The type of result returned by HTTP services. */
-  type Result[T] = IO[Problem, T]
+  type Result[T] = IO[HttpProblem, T]
 
   /** The headers to include in every HTTP request. */
   private[http] val CommonHeaders: Map[String, String] = Map(
@@ -81,14 +81,22 @@ object Http extends (HttpClient => Http) :
   /**
    * Creates an HTTP gateway.
    *
-   * @param connectTimeout The optional connection timeout to enforce.
+   * @param connectionTimeout The optional connection timeout to enforce.
    * @return A new HTTP gateway.
    */
-  def apply(connectTimeout: Option[FiniteDuration] = None): Task[Http] = Task {
+  def apply(connectionTimeout: Option[FiniteDuration] = None): Task[Http] = Task {
     val withVersion = HttpClient.newBuilder.version(HttpClient.Version.HTTP_2)
-    val withConnectTimeout = connectTimeout.fold(withVersion)(withVersion connectTimeout _.toJava)
+    val withConnectTimeout = connectionTimeout.fold(withVersion)(withVersion connectTimeout _.toJava)
     withConnectTimeout.build
   }.map(apply)
+
+  /**
+   * Creates an HTTP gateway.
+   *
+   * @param connectionTimeout The connection timeout to enforce.
+   * @return A new HTTP gateway.
+   */
+  def apply(connectionTimeout: FiniteDuration): Task[Http] = apply(Option(connectionTimeout))
 
   /**
    * Creates an HTTP gateway.
@@ -123,25 +131,6 @@ object Http extends (HttpClient => Http) :
      * @return The specified resource support.
      */
     def apply[T: Resource]: Resource[T] = summon[Resource[T]]
-
-  /**
-   * A problem encountered when executing an HTTP operation.
-   *
-   * @param _message    The message that describes this HTTP problem.
-   * @param thrown      The optional throwable that caused this HTTP problem, defaults to none.
-   * @param shouldRetry True if the HTTP operation should be retried, defaults to false.
-   */
-  final class Problem(
-    _message: String,
-    val thrown: Option[Throwable] = None,
-    val shouldRetry: Boolean = false
-  ) extends RuntimeException(_message) with NoStackTrace :
-
-    /** The message that describes this HTTP problem. */
-    def message: String = getMessage
-
-    /* Return the cause of this HTTP problem. */
-    override def getCause: Throwable = thrown getOrElse super.getCause
 
   /**
    * The live HTTP gateway implementation.
@@ -201,17 +190,17 @@ object Http extends (HttpClient => Http) :
         }
         response <- Task(client.send(request, bodyHandler)) catchSome {
           case thrown: IOException => Task fail {
-            Problem(Messages.transportFailure(request.method, uri, thrown), Some(thrown), true)
+            HttpProblem(Messages.transportFailure(request.method, uri, thrown), Some(thrown), true)
           }
         }
         result <- response.statusCode match
           case 200 => UIO(response.body)
           case statusCode => Task fail {
-            Problem(Messages.problematicResponse(request.method, uri, statusCode), shouldRetry = statusCode >= 500)
+            HttpProblem(Messages.problematicResponse(request.method, uri, statusCode), shouldRetry = statusCode >= 500)
           }
       yield response.headers.map.asScala.view.mapValues(_.asScala.toList).toMap -> result
     } catchAll {
-      case problem: Problem => IO.fail(problem)
-      case NonFatal(thrown) => IO.fail(Problem(Messages.unexpectedFailure(resource, thrown), Some(thrown)))
+      case problem: HttpProblem => IO.fail(problem)
+      case NonFatal(thrown) => IO.fail(HttpProblem(Messages.unexpectedFailure(resource, thrown), Some(thrown)))
       case fatal => IO.die(fatal)
     }

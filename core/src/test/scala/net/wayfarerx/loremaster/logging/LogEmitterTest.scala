@@ -1,6 +1,6 @@
 /* LogEmitterTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -42,16 +42,16 @@ class LogEmitterTest extends AnyFlatSpec with should.Matchers :
       _ <- emitter(Log.Level.Error, "error", Some(thrownA))
     yield ()
     Runtime.default.unsafeRunTask(effect) shouldBe()
-    emitted shouldBe List(
+    emitted shouldBe Vector(
       "TRACE trace.",
-      "TRACE trace, caused by RuntimeException.",
+      "TRACE trace, caused by java.lang.RuntimeException.",
       "DEBUG debug.",
-      "DEBUG debug, caused by RuntimeException(msg).",
+      "DEBUG debug, caused by java.lang.RuntimeException(msg).",
       "INFO  info.",
-      "INFO  info, caused by RuntimeException.",
+      "INFO  info, caused by java.lang.RuntimeException.",
       "WARN  warn.",
-      "WARN  warn, caused by RuntimeException(msg).",
+      "WARN  warn, caused by java.lang.RuntimeException(msg).",
       "ERROR error!",
-      "ERROR error, caused by RuntimeException!"
+      "ERROR error, caused by java.lang.RuntimeException!"
     )
   }

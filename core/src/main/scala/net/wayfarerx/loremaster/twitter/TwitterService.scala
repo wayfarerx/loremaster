@@ -13,43 +13,39 @@
 package net.wayfarerx.loremaster
 package twitter
 
-import zio.{Task, UIO}
+import zio.Task
 
 import event.*
-import http.*
 import logging.*
 
 /**
  * Definition of the tweet service API.
  */
-trait TwitterService extends (TwitterEvent => UIO[Unit])
+trait TwitterService extends (TwitterEvent => Task[Unit])
 
 /**
  * Definitions associated with Twitter services.
  */
-object TwitterService extends ((Retries, Log, TwitterClient, Publisher[TwitterEvent]) => TwitterService) :
+object TwitterService extends ((Log, Retries, TwitterClient, Publisher[TwitterEvent]) => TwitterService) :
 
   /**
    * Creates an implementation of the Twitter service.
    *
-   * @param retries   The retry policy to use.
    * @param log       The log to use.
+   * @param retries   The retry policy to use.
    * @param client    The Twitter client to use.
    * @param publisher The tweet publisher to retry with.
    * @return An implementation of the Twitter service.
    */
   override def apply(
-    retries: Retries,
     log: Log,
+    retries: Retries,
     client: TwitterClient,
     publisher: Publisher[TwitterEvent]
-  ): TwitterService = event => for
-    _ <- log.trace(Messages.beforeTwitterEvent)
-    _ <- (client.postTweet(event.book) *> log.info(Messages.tweeted(event))).catchSome {
+  ): TwitterService = event =>
+    (client.postTweet(event.book) *> log.info(Messages.tweeted(event))).catchSome {
       case problem if problem.shouldRetry =>
-        retries(event).fold(Task.fail(problem)) { delay =>
-          log.warn(Messages.retryingTweet(event, delay)) *> publisher(event.next, delay)
+        retries(event).fold(Task.fail(problem)) { backoff =>
+          log.warn(Messages.retryingTweet(event, backoff)) *> publisher(event.next, backoff)
         }
-    }.catchAll(log.error(Messages.failedToTweet(event), _))
-    _ <- log.trace(Messages.afterTwitterEvent)
-  yield ()
+    }

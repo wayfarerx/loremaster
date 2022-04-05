@@ -1,6 +1,6 @@
 /* SentenceTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -42,11 +42,11 @@ class SentenceTest extends AnyFlatSpec with should.Matchers :
     )
   }
 
-  it should "decode sentences from JSON" in {
-    Decoder[Sentence].apply(HCursor fromJson test.asJson) shouldBe Right(test)
+  it.should("decode sentences from JSON") in {
+    Decoder[Sentence].apply(HCursor.fromJson(test.asJson)) shouldBe Right(test)
   }
 
-  it should "construct sentences from tokens" in {
+  it.should("construct sentences from tokens") in {
     Sentence.of(tokenA, tokenB) shouldBe test
     Sentence.from(Seq(tokenA, tokenB)) shouldBe Some(test)
   }

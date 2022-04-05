@@ -15,10 +15,12 @@ package twitter
 package deployment
 
 import scala.collection.immutable.ListMap
+import scala.language.implicitConversions
 
 import io.circe.Json
 
 import deploy.*
+import event.*
 
 /**
  * Deploys the Twitter components.
@@ -27,21 +29,28 @@ trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
   override def parameters: ListMap[String, Json] = super.parameters +
-    parameter(TwitterConfiguration.BearerToken, Messages.bearerToken) +
-    parameter(TwitterConfiguration.ConnectionTimeout, Messages.connectionTimeout) +
-    parameter(TwitterConfiguration.RetryPolicy, Messages.retryPolicy)
+    parameter[String](TwitterS3Bucket, Messages.s3Bucket) +
+    parameter[String](TwitterS3Key, Messages.s3Key) +
+    parameter[String](TwitterBearerToken, Messages.bearerToken) +
+    parameter(TwitterMemorySize, Messages.memorySize, defaultFunctionMemorySize) +
+    parameter(TwitterTimeout, Messages.timeout, defaultFunctionTimeout) +
+    parameter(TwitterConnectionTimeout, Messages.connectionTimeout, defaultConnectionTimeout) +
+    parameter(TwitterRetryPolicy, Messages.retryPolicy, Retries.Default.toString)
 
   /* The resources provided by Twitter deployments. */
   override def resources: ListMap[String, Json] = super.resources ++
-    queue[TwitterEvent] ++
-    function[TwitterEvent](
-      description = Messages.functionDescription,
-      handler = classOf[TwitterFunction].getName,
+    sqsQueueToLambdaFunction[TwitterEvent, TwitterFunction](
+      Messages.description,
+      ref(TwitterS3Bucket),
+      ref(TwitterS3Key),
+      ref(TwitterMemorySize),
+      ref(TwitterTimeout),
+      permissions = Seq(),
       environment = Map(
-        TwitterConfiguration.QueueName -> ref(queueName[TwitterEvent]),
-        TwitterConfiguration.BearerToken -> ref(TwitterConfiguration.BearerToken),
-        TwitterConfiguration.ConnectionTimeout -> ref(TwitterConfiguration.ConnectionTimeout),
-        TwitterConfiguration.RetryPolicy -> ref(TwitterConfiguration.RetryPolicy)
-      )
-    ) ++
-    eventHandler[TwitterEvent]
+        TwitterQueueName -> sqsQueueName[TwitterEvent],
+        TwitterBearerToken -> ref(TwitterBearerToken),
+        TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
+        TwitterRetryPolicy -> ref(TwitterRetryPolicy)
+      ),
+      Domain -> Twitter
+    )

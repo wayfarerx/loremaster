@@ -14,11 +14,9 @@ package net.wayfarerx.loremaster
 package twitter
 package deployment
 
-import com.amazonaws.services.lambda.runtime.RequestHandler
-import com.amazonaws.services.lambda.runtime.events.SQSEvent
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder
+import scala.concurrent.duration.FiniteDuration
 
-import zio.{Has, RLayer, Task, URIO, ZLayer}
+import zio.{Has, RLayer, RIO, ZLayer}
 
 import configuration.*
 import deploy.*
@@ -38,19 +36,17 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] :
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
-        config <- URIO.service[Configuration]
-        twitterConfig <- TwitterConfiguration(config)
-        logFactory <- URIO.service[LogFactory]
+        logFactory <- RIO.service[LogFactory]
         log <- logFactory.log[TwitterService]
-        client <- Http(twitterConfig.connectionTimeout).map(TwitterClient(twitterConfig.bearerToken, _))
-      yield TwitterService(
-        twitterConfig.retryPolicy getOrElse Retries.Default,
-        log,
-        client,
-        SqsPublisher[TwitterEvent](twitterConfig.queueName)
-      )
+        config <- RIO.service[Configuration]
+        retries <- config[Retries](TwitterRetryPolicy)
+        connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
+        bearerToken <- config[String](TwitterBearerToken)
+        client <- Http(connectionTimeout).map(TwitterClient(_, bearerToken))
+        publisher <- config[String](TwitterQueueName).map(SqsPublisher[TwitterEvent](_))
+      yield TwitterService(log, retries, client, publisher)
     }
 
   /* Publish the specified book to Twitter. */
-  override protected def onMessage(event: TwitterEvent): URIO[Environment, Unit] =
-    URIO.service[TwitterService].flatMap(_ (event))
+  override protected def onMessage(event: TwitterEvent): RIO[Environment, Unit] =
+    RIO.service[TwitterService].flatMap(_ (event))

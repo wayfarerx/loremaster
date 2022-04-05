@@ -1,6 +1,6 @@
 /* LogTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -42,7 +42,7 @@ class LogTest extends AnyFlatSpec with should.Matchers :
       _ <- log.error("error")
       _ <- log.error("error", thrown)
     yield ()
-    Runtime.default unsafeRunTask effect shouldBe()
+    Runtime.default.unsafeRunTask(effect) shouldBe()
     emitted shouldBe Vector(
       (Log.Level.Trace, "trace", None),
       (Log.Level.Trace, "trace", Some(thrown)),
@@ -57,7 +57,7 @@ class LogTest extends AnyFlatSpec with should.Matchers :
     )
   }
 
-  it should "drop events under the threshold" in {
+  it.should("drop events under the threshold") in {
     var emitted = Vector.empty[(Log.Level, String, Option[Throwable])]
     val log = Log("test", Log.Level.Warn, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
     val effect = for
@@ -67,7 +67,7 @@ class LogTest extends AnyFlatSpec with should.Matchers :
       _ <- log(Log.Level.Warn, "warn")
       _ <- log(Log.Level.Error, "error")
     yield ()
-    Runtime.default unsafeRunTask effect shouldBe()
+    Runtime.default.unsafeRunTask(effect) shouldBe()
     emitted shouldBe Vector(
       (Log.Level.Warn, "test: warn", None),
       (Log.Level.Error, "test: error", None)

@@ -1,6 +1,6 @@
 /* Location.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -64,8 +64,8 @@ case class Location(path: NonEmptyList[ID]):
    * @return This location with the specified suffix appended to the last ID.
    */
   def withSuffix(suffix: String): Option[Location] = for
-    suffixed <- ID decode path.last.value + suffix
-    result <- Location from path.init :+ suffixed
+    suffixed <- ID.decode(path.last.value + suffix)
+    result <- Location.from(path.init :+ suffixed)
   yield result
 
   /* Return a string representation of this location. */
@@ -80,10 +80,10 @@ object Location extends (NonEmptyList[ID] => Location) :
   given Ordering[Location] = Ordering by (_.path.toList)
 
   /** The encoding of locations to JSON. */
-  given Encoder[Location] = Encoder[String] contramap (_.toString)
+  given Encoder[Location] = Encoder[String].contramap(_.toString)
 
   /** The decoding of locations from JSON. */
-  given Decoder[Location] = Decoder[String] emap (path => decode(path) toRight Messages.invalidLocation(path))
+  given Decoder[Location] = Decoder[String].emap(path => decode(path) toRight Messages.invalidLocation(path))
 
   /** The canonical separator character. */
   private val Separator = "/"
@@ -109,7 +109,7 @@ object Location extends (NonEmptyList[ID] => Location) :
    * @return A location with a path of the specified IDs.
    */
   def from[F[_] : Foldable](path: F[ID]): Option[Location] =
-    NonEmptyList fromFoldable path map apply
+    NonEmptyList.fromFoldable(path) map apply
 
 
   /**
@@ -136,7 +136,7 @@ object Location extends (NonEmptyList[ID] => Location) :
       if stack.isEmpty then None
       else decoding(stack.init, tail)
     case head :: tail =>
-      ID decode head match
+      ID.decode(head) match
         case Some(id) => decoding(stack :+ id, tail)
         case None => None
-    case Nil => NonEmptyList fromFoldable stack
+    case Nil => NonEmptyList.fromFoldable(stack)

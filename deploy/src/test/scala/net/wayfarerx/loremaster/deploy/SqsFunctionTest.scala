@@ -21,7 +21,7 @@ import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
-import zio.{RIO, RLayer, Task, ZLayer}
+import zio.{RIO, RLayer, Task, UIO, URIO, ZLayer}
 
 import org.scalatest.*
 import org.scalatest.flatspec.*
@@ -41,8 +41,8 @@ class SqsFunctionTest extends AnyFlatSpec with should.Matchers with MockitoSugar
   "SQS function templates" should "operate in the specified environment" in {
     var messages = 0
     val function = TestFunction { (actual, expected) =>
-      Task {
-        actual shouldBe expected
+      UIO {
+        Task(actual shouldBe expected).catchAll(UIO.die(_))
         messages += 1
       }
     }
@@ -88,11 +88,11 @@ object SqsFunctionTest:
    *
    * @param validate The function to validate messages with.
    */
-  final class TestFunction(validate: (TestMessage, TestMessage) => Task[Unit]) extends SqsFunction[TestMessage]:
+  final class TestFunction(validate: (TestMessage, TestMessage) => UIO[Unit]) extends SqsFunction[TestMessage]:
 
     override type Environment = AwsEnv
 
     override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
 
-    override protected def onMessage(message: TestMessage): RIO[Environment, Unit] =
+    override protected def onMessage(message: TestMessage): URIO[Environment, Unit] =
       validate(message, TestMessage.Valid)

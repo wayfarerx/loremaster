@@ -1,4 +1,4 @@
-/* ConfigurationProblem.scala
+/* HttpProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,23 +11,25 @@
  */
 
 package net.wayfarerx.loremaster
-package configuration
+package http
 
 import scala.util.control.NoStackTrace
 
 /**
- * The exception thrown when a configuration entry is not available.
+ * A problem encountered when executing an HTTP operation.
  *
- * @param _message The message that describes the problem.
- * @param cause    The throwable that caused this problem, defaults to none.
+ * @param _message    The message that describes this HTTP problem.
+ * @param thrown      The optional throwable that caused this HTTP problem, defaults to none.
+ * @param shouldRetry True if the HTTP operation should be retried, defaults to false.
  */
-final class ConfigurationProblem(
+class HttpProblem(
   _message: String,
-  val cause: Option[Throwable] = None
+  val thrown: Option[Throwable] = None,
+  val shouldRetry: Boolean = false
 ) extends RuntimeException(_message) with NoStackTrace :
 
-  /** The message that describes this problem. */
+  /** The message that describes this HTTP problem. */
   def message: String = getMessage
 
-  /* Return the cause of this Twitter problem. */
-  override def getCause: Throwable = cause getOrElse super.getCause
+  /* Return the cause of this HTTP problem. */
+  override def getCause: Throwable = thrown getOrElse super.getCause

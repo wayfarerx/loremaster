@@ -55,10 +55,10 @@ object LogEmitter extends (((Log.Level, String, Option[Throwable]) => UIO[Unit])
    * @param thrown  The exception that was thrown.
    * @return A log entry string from the specified elements.
    */
-  def format(level: Log.Level, message: String, thrown: Option[Throwable]): String =
-    val levelString = level.toString
-    val _level = levelString.toUpperCase + Messages.Space * (MaxLevelLength - levelString.length + 1)
-    val _thrown = thrown.fold("")(Messages.causedBy)
-    val suffix = if level == Log.Level.Error then Messages.Exclamation else Messages.Period
-    _level + message + _thrown + suffix
+  private def format(level: Log.Level, message: String, thrown: Option[Throwable]): String =
+    val levelString = level.toString.toUpperCase
+    (levelString + Messages.Space * (MaxLevelLength - levelString.length + 1)) +
+      message +
+      thrown.fold("")(Messages.causedBy) +
+      (if level == Log.Level.Error then Messages.Exclamation else Messages.Period)
 

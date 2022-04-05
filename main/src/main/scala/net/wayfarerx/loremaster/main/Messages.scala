@@ -31,8 +31,8 @@ private object Messages {
    * @return The message that describes a failure to write an AWS CloudFormation template.
    */
   def failedToWriteAwsCloudFormationTemplate(thrown: Throwable): String =
-    s"Failed to write AWS CloudFormation template for $Application: ${thrown.getClass.getSimpleName}(${
-      Option(thrown.getMessage) getOrElse ""
-    })"
+    s"Failed to write AWS CloudFormation template for $Application: ${thrown.getClass.getSimpleName}${
+      Option(thrown.getMessage).fold("")(msg => s"($msg)")
+    }"
 
 }

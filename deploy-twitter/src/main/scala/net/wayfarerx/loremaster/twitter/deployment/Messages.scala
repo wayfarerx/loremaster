@@ -19,10 +19,18 @@ package deployment
  */
 private object Messages:
 
+  def description: String = s"The function that handles $Application Twitter events."
+
+  def s3Bucket: String = s"The S3 bucket where the $Application Twitter code is stored."
+
+  def s3Key: String = s"The S3 key where the $Application Twitter code is stored."
+
   def bearerToken: String = s"The $Application Twitter bearer token."
+
+  def memorySize: String = s"The amount of memory afforded to the $Application Twitter function."
+
+  def timeout: String = s"The timeout applied to the $Application Twitter function."
 
   def connectionTimeout: String = s"The $Application Twitter connection timeout."
 
   def retryPolicy: String = s"The $Application Twitter retry policy."
-
-  def functionDescription: String = s"The function that handles $Application Twitter events."

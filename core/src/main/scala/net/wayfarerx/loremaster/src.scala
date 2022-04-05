@@ -27,10 +27,10 @@ val Version: String = "0.x"
  * @return The description of the throwable.
  */
 def describe(thrown: Throwable): String =
-  s"${thrown.getClass.getSimpleName}${Option(thrown.getMessage).filterNot(_.isEmpty).fold("")(msg => s"($msg)") }"
+  s"${thrown.getClass.getName}${Option(thrown.getMessage).filterNot(_.isEmpty).fold("")(msg => s"($msg)") }"
 
 /**
- * Emits a JSON value as a string.
+ * Emits a JSON-compatible value as a string.
  *
  * @tparam T The type of value to emit.
  * @param value The value to emit.
@@ -39,10 +39,10 @@ def describe(thrown: Throwable): String =
 def emitJson[T: Encoder](value: T): String = Encoder[T].apply(value).spaces2
 
 /**
- * Attempts to parse a JSON value from a string.
+ * Attempts to parse a JSON-compatible value from a string.
  *
  * @tparam T The type of value to parse.
  * @param json The string to parse.
- * @return The result of attempting to parse a JSON value from a string.
+ * @return The result of attempting to parse a JSON-compatible value from a string.
  */
 def parseJson[T: Decoder](json: String): Either[Throwable, T] = parser.decode[T](json)

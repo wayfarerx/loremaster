@@ -1,6 +1,6 @@
 /* ID.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -34,10 +34,10 @@ object ID:
   given Ordering[ID] = Ordering by (_.value)
 
   /** The encoding of IDs to JSON. */
-  given Encoder[ID] = Encoder[String] contramap (_.value)
+  given Encoder[ID] = Encoder[String].contramap(_.value)
 
   /** The decoding of IDs from JSON. */
-  given Decoder[ID] = Decoder[String] emap (value => decode(value) toRight Messages.invalidId(value))
+  given Decoder[ID] = Decoder[String].emap(value => decode(value) toRight Messages.invalidId(value))
 
   /** The dots that are not allowed to define IDs. */
   private[this] val Dots = Set('.')

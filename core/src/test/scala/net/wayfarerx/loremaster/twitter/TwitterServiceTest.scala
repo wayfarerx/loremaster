@@ -45,7 +45,7 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     val publisher = mock[Publisher[TwitterEvent]]
     when(client.postTweet(testEvent.book)) thenReturn IO.unit
     Runtime.default.unsafeRunTask {
-      TwitterService(event.Retries.Default, Log.NoOp, client, publisher).apply(testEvent)
+      TwitterService(Log.NoOp, event.Retries.Default, client, publisher).apply(testEvent)
     } shouldBe()
     verify(client).postTweet(testEvent.book)
     verifyNoInteractions(publisher)
@@ -58,20 +58,22 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     when(client.postTweet(testEvent.book)) thenReturn IO.fail(problem)
     when(publisher.apply(testEvent.next, event.Retries.Backoff.Default.delay)) thenReturn Task.unit
     Runtime.default.unsafeRunTask {
-      TwitterService(event.Retries.Default, Log.NoOp, client, publisher).apply(testEvent)
+      TwitterService(Log.NoOp, event.Retries.Default, client, publisher).apply(testEvent)
     } shouldBe()
     verify(client).postTweet(testEvent.book)
     verify(publisher).apply(testEvent.next, event.Retries.Backoff.Default.delay)
   }
 
-  it.should("drop fatal problems when posting tweets") in {
+  it.should("propagate fatal problems when posting tweets") in {
     val retries = event.Retries(termination = event.Retries.Termination.LimitRetries(0))
     val client = mock[TwitterClient]
     val publisher = mock[Publisher[TwitterEvent]]
     val problem = TwitterProblem("PROBLEM", Some(RuntimeException()))
     when(client.postTweet(testEvent.book)) thenReturn IO.fail(problem)
     Runtime.default.unsafeRunTask {
-      TwitterService(retries, Log.NoOp, client, publisher).apply(testEvent)
+      TwitterService(Log.NoOp, retries, client, publisher)(testEvent) catchSome {
+        case _problem if _problem == problem => Task.unit
+      }
     } shouldBe()
     verify(client).postTweet(testEvent.book)
     verifyNoInteractions(publisher)

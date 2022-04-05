@@ -37,7 +37,7 @@ trait TwitterClient:
 /**
  * Definitions associated with Twitter clients.
  */
-object TwitterClient extends ((String, Http) => TwitterClient) :
+object TwitterClient extends ((Http, String) => TwitterClient) :
 
   /** The Twitter HTTP endpoint to connect to for tweeting. */
   val TweetsEndpoint = "https://api.twitter.com/2/tweets"
@@ -45,11 +45,11 @@ object TwitterClient extends ((String, Http) => TwitterClient) :
   /**
    * Creates a Twitter client.
    *
-   * @param bearerToken The bearer token to authenticate to Twitter with.
    * @param http        The http service to use when connecting to Twitter.
+   * @param bearerToken The bearer token to authenticate to Twitter with.
    * @return A new Twitter client.
    */
-  override def apply(bearerToken: String, http: Http): TwitterClient = book => {
+  override def apply(http: Http, bearerToken: String): TwitterClient = book => {
     http.post(
       TweetsEndpoint,
       emitJson(Body(text = Some(book.toString))),

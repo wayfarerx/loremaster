@@ -1,6 +1,6 @@
 /* TokenTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -58,7 +58,7 @@ class TokenTest extends AnyFlatSpec with should.Matchers :
     Ordering[Token].compare(Name("b", catHead), Text("a", "n")) should be > 0
   }
 
-  it should "encode tokens to JSON" in {
+  it.should("encode tokens to JSON") in {
     Encoder[Text].apply(testText) shouldBe Json.obj(
       "text" -> Json.fromString(testText.text),
       "pos" -> Json.fromString(testText.pos)
@@ -72,10 +72,10 @@ class TokenTest extends AnyFlatSpec with should.Matchers :
     Encoder[Token].apply(testName) shouldBe Encoder[Name].apply(testName)
   }
 
-  it should "decode tokens from JSON" in {
-    Decoder[Text].apply(HCursor fromJson testText.asJson) shouldBe Right(testText)
-    Decoder[Token].apply(HCursor fromJson testText.asJson) shouldBe Right(testText)
-    Decoder[Category].apply(HCursor fromJson testName.category.asJson) shouldBe Right(testName.category)
-    Decoder[Name].apply(HCursor fromJson testName.asJson) shouldBe Right(testName)
-    Decoder[Token].apply(HCursor fromJson testName.asJson) shouldBe Right(testName)
+  it.should("decode tokens from JSON") in {
+    Decoder[Text].apply(HCursor.fromJson(testText.asJson)) shouldBe Right(testText)
+    Decoder[Token].apply(HCursor.fromJson(testText.asJson)) shouldBe Right(testText)
+    Decoder[Category].apply(HCursor.fromJson(testName.category.asJson)) shouldBe Right(testName.category)
+    Decoder[Name].apply(HCursor.fromJson(testName.asJson)) shouldBe Right(testName)
+    Decoder[Token].apply(HCursor.fromJson(testName.asJson)) shouldBe Right(testName)
   }

@@ -1,6 +1,6 @@
 /* LocationTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -46,16 +46,16 @@ class LocationTest extends AnyFlatSpec with should.Matchers :
     test.reverse shouldBe location"$last/$head"
   }
 
-  it should "support prepend and append operations" in {
+  it.should("support prepend and append operations") in {
     test :+ other shouldBe location"$test/$other"
     other +: test shouldBe location"$other/$test"
     test :++ Location.of(other) shouldBe location"$test/$other"
     Location.of(other) ++: test shouldBe location"$other/$test"
-    test withSuffix "/" shouldBe None
-    test withSuffix ".json" shouldBe Some(location"$test.json")
+    test.withSuffix("/") shouldBe None
+    test.withSuffix(".json") shouldBe Some(location"$test.json")
   }
 
-  it should "return its encoded value when converted to a string" in {
+  it.should("return its encoded value when converted to a string") in {
     test.toString shouldBe s"$head/$last"
   }
 
@@ -64,24 +64,24 @@ class LocationTest extends AnyFlatSpec with should.Matchers :
     Ordering[Location].compare(test, test :+ other) shouldBe -1
   }
 
-  it should "encode locations to JSON" in {
+  it.should("encode locations to JSON") in {
     Encoder[Location].apply(test) shouldBe Json.fromString(test.toString)
   }
 
-  it should "decode locations from JSON" in {
-    Decoder[Location].apply(HCursor fromJson test.asJson) shouldBe Right(test)
+  it.should("decode locations from JSON") in {
+    Decoder[Location].apply(HCursor.fromJson(test.asJson)) shouldBe Right(test)
   }
 
-  it should "decode location strings with single and double dot path elements" in {
-    Location decode s"$test/./$other" shouldBe Some(test :+ other)
-    Location decode s"$test/../$other" shouldBe Some(Location.of(head, other))
+  it.should("decode location strings with single and double dot path elements") in {
+    Location.decode(s"$test/./$other") shouldBe Some(test :+ other)
+    Location.decode(s"$test/../$other") shouldBe Some(Location.of(head, other))
   }
 
-  it should "fail to decode from invalid location strings" in {
-    Location decode "" shouldBe None
-    Location decode "." shouldBe None
-    Location decode ".." shouldBe None
-    Location decode "..." shouldBe None
-    Location decode "/" shouldBe None
-    Location decode "/\\" shouldBe None
+  it.should("fail to decode from invalid location strings") in {
+    Location.decode("") shouldBe None
+    Location.decode(".") shouldBe None
+    Location.decode("..") shouldBe None
+    Location.decode("...") shouldBe None
+    Location.decode("/") shouldBe None
+    Location.decode("/\\") shouldBe None
   }

@@ -15,7 +15,6 @@ package deploy
 
 import scala.jdk.CollectionConverters.*
 
-import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import io.circe.Decoder
@@ -35,7 +34,7 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
   final override def apply(event: SQSEvent): RIO[Environment, Unit] = for
     logFactory <- RIO.service[LogFactory]
     log <- logFactory(getClass)
-    _ <- onMessages(log, event.getRecords.iterator.asScala)
+    _ <- onMessages(log, event.getRecords.asScala.toList)
   yield ()
 
   /**
@@ -44,21 +43,18 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
    * @param messages The messages to handle.
    * @return An effect that handles the specified messages.
    */
-  private def onMessages(log: Log, messages: Iterator[SQSEvent.SQSMessage]): URIO[Environment, Unit] =
-    if !messages.hasNext then URIO.unit else {
-      val message = messages.next
+  private def onMessages(log: Log, messages: List[SQSEvent.SQSMessage]): URIO[Environment, Unit] = messages match
+    case head :: tail =>
       for
-        messageOpt <- RIO.fromEither(parseJson[T](message.getBody)).map(Some(_)) catchAll {
-          log.error(Messages.failedToDecodeSqsMessage(message.getBody), _) *> URIO.none
+        _ <- Option(head.getBody).filterNot(_.isEmpty).fold(URIO.unit) { message =>
+          parseJson[T](message).fold(
+            log.error(Messages.failedToParseSqsMessage(message), _),
+            onMessage(_).catchAll(log.error(Messages.failedToDeliverSqsMessage(message), _))
+          )
         }
-        _ <- messageOpt.fold(URIO.unit) { message =>
-          onMessage(message) catchAll {
-            log.error(Messages.failedToHandleSqsMessage(message.toString), _)
-          }
-        }
-        _ <- onMessages(log, messages)
+        _ <- onMessages(log, tail)
       yield ()
-    }
+    case Nil => URIO.unit
 
   /**
    * Handles a message from the SQS queue.

@@ -1,6 +1,6 @@
 /* Paragraph.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -29,7 +29,7 @@ case class Paragraph(sentences: NonEmptyList[Sentence])
 /**
  * Factory for paragraphs.
  */
-object Paragraph extends (NonEmptyList[Sentence] => Paragraph):
+object Paragraph extends (NonEmptyList[Sentence] => Paragraph) :
 
   /** The given encoding of paragraphs to JSON. */
   given Encoder[Paragraph] = deriveEncoder
@@ -45,7 +45,7 @@ object Paragraph extends (NonEmptyList[Sentence] => Paragraph):
    * @return A paragraph with the specified sentences.
    */
   def of(head: Sentence, tail: Sentence*): Paragraph =
-    apply(NonEmptyList.of(head, tail*))
+    apply(NonEmptyList.of(head, tail *))
 
   /**
    * Creates a paragraph with the specified sentences.
@@ -55,4 +55,4 @@ object Paragraph extends (NonEmptyList[Sentence] => Paragraph):
    * @return A paragraph with the specified sentences.
    */
   def from[F[_] : Foldable](sentences: F[Sentence]): Option[Paragraph] =
-    NonEmptyList fromFoldable sentences map apply
+    NonEmptyList.fromFoldable(sentences) map apply

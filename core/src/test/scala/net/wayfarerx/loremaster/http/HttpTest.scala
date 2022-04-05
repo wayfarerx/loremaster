@@ -77,7 +77,7 @@ class HttpTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
       for
         uri <- Http.Resource[String].apply(resource)
         _ <- Http(httpClient).head(resource) catchSome {
-          case problem: Http.Problem => Task {
+          case problem: HttpProblem => Task {
             problem.message shouldBe Messages.transportFailure("HEAD", uri, ioException)
             problem.thrown shouldBe Some(ioException)
             problem.shouldRetry shouldBe true
@@ -95,7 +95,7 @@ class HttpTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
       for
         uri <- Http.Resource[String].apply(resource)
         _ <- Http(httpClient).head(resource) catchSome {
-          case problem: Http.Problem => Task {
+          case problem: HttpProblem => Task {
             problem.message shouldBe Messages.unexpectedFailure(uri, illegalArgumentException)
             problem.thrown shouldBe Some(illegalArgumentException)
             problem.shouldRetry shouldBe false
@@ -127,7 +127,7 @@ class HttpTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
         uri <- Http.Resource[String].apply(resource)
         httpClient <- mockEmptyHttpClient("HEAD", 404)
         _ <- Http(httpClient).head(resource) catchSome {
-          case problem: Http.Problem => Task {
+          case problem: HttpProblem => Task {
             problem.message shouldBe Messages.problematicResponse("HEAD", uri, 404)
             problem.thrown shouldBe None
             problem.shouldRetry shouldBe false
@@ -143,7 +143,7 @@ class HttpTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
         uri <- Http.Resource[String].apply(resource)
         httpClient <- mockEmptyHttpClient("HEAD", 500)
         _ <- Http(httpClient).head(resource) catchSome {
-          case problem: Http.Problem => Task {
+          case problem: HttpProblem => Task {
             problem.message shouldBe Messages.problematicResponse("HEAD", uri, 500)
             problem.thrown shouldBe None
             problem.shouldRetry shouldBe true

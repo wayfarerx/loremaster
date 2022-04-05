@@ -1,6 +1,6 @@
 /* Sentence.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -29,7 +29,7 @@ case class Sentence(tokens: NonEmptyList[Token])
 /**
  * Factory for sentences.
  */
-object Sentence extends (NonEmptyList[Token] => Sentence):
+object Sentence extends (NonEmptyList[Token] => Sentence) :
 
   /** The given encoding of sentences to JSON. */
   given Encoder[Sentence] = deriveEncoder
@@ -45,7 +45,7 @@ object Sentence extends (NonEmptyList[Token] => Sentence):
    * @return A sentence with the specified tokens.
    */
   def of(head: Token, tail: Token*): Sentence =
-    apply(NonEmptyList.of(head, tail*))
+    apply(NonEmptyList.of(head, tail *))
 
   /**
    * Creates a sentence with the specified tokens.
@@ -55,4 +55,4 @@ object Sentence extends (NonEmptyList[Token] => Sentence):
    * @return A sentence with the specified tokens.
    */
   def from[F[_] : Foldable](tokens: F[Token]): Option[Sentence] =
-    NonEmptyList fromFoldable tokens map apply
+    NonEmptyList.fromFoldable(tokens) map apply

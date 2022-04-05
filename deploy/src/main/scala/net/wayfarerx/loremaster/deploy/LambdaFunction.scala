@@ -49,7 +49,7 @@ trait LambdaFunction[T] extends RequestHandler[T, String] :
     val logger = context.getLogger
     Runtime.default unsafeRunTask {
       apply(request).provideLayer {
-        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(msg => UIO(logger.log(msg))))
+        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(entry => UIO(logger.log(entry))))
           >>> AwsEnv >>> environment
       }.map(_ => Messages.okay)
     }

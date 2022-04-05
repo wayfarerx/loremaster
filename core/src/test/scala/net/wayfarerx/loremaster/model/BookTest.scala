@@ -1,6 +1,6 @@
 /* BookTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -40,11 +40,11 @@ class BookTest extends AnyFlatSpec with should.Matchers :
     )
   }
 
-  it should "decode books from JSON" in {
-    Decoder[Book].apply(HCursor fromJson test.asJson) shouldBe Right(test)
+  it.should("decode books from JSON") in {
+    Decoder[Book].apply(HCursor.fromJson(test.asJson)) shouldBe Right(test)
   }
 
-  it should "construct books from paragraphs" in {
+  it.should("construct books from paragraphs") in {
     Book.of("A", "B") shouldBe test
     Book.from(Seq("A", "B")) shouldBe Some(test)
   }

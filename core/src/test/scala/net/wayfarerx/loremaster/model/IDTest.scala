@@ -1,6 +1,6 @@
 /* IDTest.scala
  *
- * Copyright (c) 2021 wayfarerx (@thewayfarerx).
+ * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
@@ -23,7 +23,7 @@ import matchers.*
 /**
  * Test case for the ID type.
  */
-class IDTest extends AnyFlatSpec with should.Matchers:
+class IDTest extends AnyFlatSpec with should.Matchers :
 
   /** A test ID. */
   private val test = id"test"
@@ -36,14 +36,14 @@ class IDTest extends AnyFlatSpec with should.Matchers:
     Encoder[ID].apply(test) shouldBe Json.fromString(test.toString)
   }
 
-  it should "decode IDs from JSON" in {
-    Decoder[ID].apply(HCursor fromJson test.asJson) shouldBe Right(test)
+  it.should("decode IDs from JSON") in {
+    Decoder[ID].apply(HCursor.fromJson(test.asJson)) shouldBe Right(test)
   }
 
-  it should "fail to decode from invalid ID strings" in {
-    ID decode "" shouldBe None
-    ID decode "." shouldBe None
-    ID decode ".." shouldBe None
-    ID decode "/" shouldBe None
-    ID decode "a\\b" shouldBe None
+  it.should("fail to decode from invalid ID strings") in {
+    ID.decode("") shouldBe None
+    ID.decode(".") shouldBe None
+    ID.decode("..") shouldBe None
+    ID.decode("/") shouldBe None
+    ID.decode("a\\b") shouldBe None
   }
