@@ -54,7 +54,8 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
         }
         _ <- onMessages(log, tail)
       yield ()
-    case Nil => URIO.unit
+    case Nil =>
+      URIO.unit
 
   /**
    * Handles a message from the SQS queue.

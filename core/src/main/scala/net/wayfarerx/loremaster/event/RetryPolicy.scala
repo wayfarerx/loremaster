@@ -1,4 +1,4 @@
-/* Retries.scala
+/* RetryPolicy.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -23,11 +23,11 @@ import configuration.*
  * A policy for determining when to retry an event.
  *
  * @param backoff     The policy to use when calculating retry backoff.
- * @param termination The policy to use when evaluating if retries should continue.
+ * @param termination The policy to use when evaluating if retryPolicy should continue.
  */
-case class Retries(
-  backoff: Retries.Backoff = Retries.Backoff.Default,
-  termination: Retries.Termination = Retries.Termination.Default
+case class RetryPolicy(
+  backoff: RetryPolicy.Backoff = RetryPolicy.Backoff.Default,
+  termination: RetryPolicy.Termination = RetryPolicy.Termination.Default
 ):
 
   /**
@@ -46,7 +46,7 @@ case class Retries(
 /**
  * Factory for retry policies.
  */
-object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
+object RetryPolicy extends ((RetryPolicy.Backoff, RetryPolicy.Termination) => RetryPolicy) :
 
   import Configuration.Data
 
@@ -54,7 +54,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
   private[this] val Separator = ':'
 
   /** Support for retry policies as configuration data. */
-  given Data[Retries] = Data.define(classOf[Retries].getSimpleName) { data =>
+  given Data[RetryPolicy] = Data.define(classOf[RetryPolicy].getSimpleName) { data =>
     data indexOf Separator match
       case notFound if notFound < 0 =>
         Data[Backoff].apply(data).map(backoff => Default.copy(backoff = backoff))
@@ -64,11 +64,11 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
           case (None, None) => None
           case (Some(backoff), None) => Some(Default.copy(backoff = backoff))
           case (None, Some(termination)) => Some(Default.copy(termination = termination))
-          case (Some(backoff), Some(termination)) => Some(Retries(backoff, termination))
+          case (Some(backoff), Some(termination)) => Some(RetryPolicy(backoff, termination))
   }
 
   /** The default retry policy. */
-  val Default: Retries = Retries(Backoff.Default, Termination.Default)
+  val Default: RetryPolicy = RetryPolicy()
 
   /**
    * A policy for calculating retry backoff.
@@ -90,7 +90,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
   object Backoff:
 
     /** Support for retry backoff policies as configuration data. */
-    given Data[Backoff] = Data.define(s"${Data[Retries].`type`}.${classOf[Backoff].getSimpleName}") {
+    given Data[Backoff] = Data.define(s"${Data[RetryPolicy].`type`}.${classOf[Backoff].getSimpleName}") {
       case golden if golden.headOption contains Golden.Designator =>
         Data[FiniteDuration] apply golden.dropWhile(_ == Golden.Designator) map Golden.apply
       case linear if linear.headOption contains Linear.Designator =>
@@ -100,7 +100,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
     }
 
     /** The default backoff policy. */
-    val Default: Golden = Golden(1.minute)
+    val Default: Backoff = Golden(1.minute.toSeconds.seconds)
 
     /**
      * Returns a constant backoff.
@@ -179,12 +179,12 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
   object Termination:
 
     /** Support for retry termination policies as configuration data. */
-    given Data[Termination] = Data.define("Retries.Termination") { data =>
+    given Data[Termination] = Data.define("RetryPolicy.Termination") { data =>
       Data[Int] apply data map LimitRetries.apply orElse (Data[FiniteDuration] apply data map LimitDuration.apply)
     }
 
     /** The default backoff policy. */
-    val Default: LimitRetries = LimitRetries(2)
+    val Default: Termination = LimitRetries(2)
 
     /**
      * Limits the number of retry attempts.
@@ -197,7 +197,7 @@ object Retries extends ((Retries.Backoff, Retries.Termination) => Retries) :
       override def apply[T: Event](event: T): Boolean =
         Event[T].previousAttempts(event) >= maximum
 
-      /* Encode the limit on retries. */
+      /* Encode the limit on retryPolicy. */
       override def toString: String = maximum.toString
 
     /**

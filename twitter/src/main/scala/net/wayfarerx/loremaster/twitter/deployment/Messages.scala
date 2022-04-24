@@ -27,9 +27,9 @@ private object Messages:
 
   def bearerToken: String = s"The $Application Twitter bearer token."
 
-  def memorySize: String = s"The amount of memory afforded to the $Application Twitter function."
+  def memorySize: String = s"The amount of memory afforded to the $Application Twitter function in MB."
 
-  def timeout: String = s"The timeout applied to the $Application Twitter function."
+  def timeout: String = s"The timeout applied to the $Application Twitter function in seconds."
 
   def connectionTimeout: String = s"The $Application Twitter connection timeout."
 

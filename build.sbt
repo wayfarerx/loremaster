@@ -29,33 +29,44 @@ lazy val Main = "main"
 /** The "twitter" string". */
 lazy val Twitter = "twitter"
 
+/** The "Version" string. */
+lazy val Version = "Version"
+
 /** The name of the S3 bucket that stores the Lambda functions. */
-lazy val S3LambdaBucket = s"$Application-lambda-${Function}s"
+lazy val LambdaS3Bucket = s"$Application-lambda-${Function}s"
 
 /** The key for shipping the current build. */
 lazy val ship = taskKey[Unit]("Ships the current build")
 
 /**
- * The settings used for library projects.
+ * The settings used for all projects.
  *
  * @param domain The domain that the project implements.
+ * @return The settings used for all projects.
+ */
+def commonSettings(domain: String): Seq[Def.Setting[_]] = Seq(
+  name := s"$Application-$domain"
+)
+
+/**
+ * The settings used for library projects.
+ *
+ * @param domain The domain that the library implements.
  * @return The settings used for library projects.
  */
-def librarySettings(domain: String): Seq[Def.Setting[_]] = Seq(
-  name := s"$Application-$domain",
-  ship := Def.unit(None)
-)
+def librarySettings(domain: String): Seq[Def.Setting[_]] =
+  commonSettings(domain) :+ (ship := Def.unit(None))
 
 /**
  * The settings used for Lambda function projects.
  *
- * @param domain           The domain that the project implements.
+ * @param domain           The domain that the function implements.
  * @param proguardHeapSize The maximum heap size to allow for Proguard, defaults to "2G".
  * @return The settings used for Lambda function projects.
  */
 def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.Setting[_]] = {
   val proguardJavaOptions = Seq(s"-Xmx$proguardHeapSize")
-  librarySettings(domain) ++ Seq(
+  commonSettings(domain) ++ Seq(
     proguard / javaOptions := proguardJavaOptions,
     Proguard / proguard / javaOptions := proguardJavaOptions,
     Proguard / proguardMerge := true,
@@ -65,8 +76,8 @@ def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.S
     Proguard / proguardInputs := (Compile / dependencyClasspath).value.files,
     Proguard / proguardFilteredInputs ++= ProguardOptions.noFilter((Compile / packageBin).value),
     Proguard / proguardMergeStrategies += ProguardMerge.discard("META-INF/.*".r),
-    s3Bucket := S3LambdaBucket,
-    s3Key := s"$domain/$domain-${version.value}.jar",
+    s3Bucket := LambdaS3Bucket,
+    s3Key := s"$domain/$Application-$domain-${version.value}.jar",
     uploadedArtifact := (Proguard / proguardOutputs).map(_.head).value,
     ship := Def.sequential(Proguard / proguard, publish).value
   )
@@ -113,14 +124,17 @@ lazy val deployments = project.in(file(Deployments))
 lazy val twitter = project.in(file(Twitter))
   .enablePlugins(SbtProguard, PublishToS3)
   .settings(functionSettings(Twitter))
-  .dependsOn(deployments)
+  .dependsOn(core, deployments)
 
 /** The Loremaster main project. */
 lazy val main = project.in(file(Main))
   .enablePlugins(CloudFormationStack)
   .settings(
-    librarySettings(Main)//,
-    //ship := deployStack.value
+    commonSettings(Main),
+    Compile / run / mainClass := Some("net.wayfarerx.loremaster.main.Main"),
+    stackName := Application.capitalize,
+    stackParameters := List(Version -> version.value),
+    ship := deployStack.value
   ).dependsOn(
-    twitter
-  )
+  twitter
+)

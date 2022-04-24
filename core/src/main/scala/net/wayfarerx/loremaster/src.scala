@@ -17,9 +17,6 @@ import io.circe.{Decoder, Encoder, parser}
 /** The name of the application. */
 val Application: String = "Loremaster"
 
-/** The version of the application. */
-val Version: String = "0.x"
-
 /**
  * Describes a throwable.
  *

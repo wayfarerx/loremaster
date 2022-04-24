@@ -22,6 +22,8 @@ private object Messages {
 
   def accountId: String = s"The ID of the AWS account $Application operates in."
 
+  def version: String = s"The version of $Application to use."
+
   def failedToAccessConfiguration(key: String, thrown: Throwable): String =
     s"""Failed to access configuration "$key": ${describe(thrown)}"""
 

@@ -29,22 +29,18 @@ trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
   override def parameters: Entries = super.parameters +
-    parameter[String](TwitterS3Bucket, Messages.s3Bucket) +
-    parameter[String](TwitterS3Key, Messages.s3Key) +
-    parameter(TwitterMemorySize, Messages.memorySize, defaultFunctionMemorySize) +
-    parameter(TwitterTimeout, Messages.timeout, defaultFunctionTimeout) +
+    parameter(TwitterMemorySizeMB, Messages.memorySize, defaultFunctionMemorySizeMB) +
+    parameter(TwitterTimeoutSeconds, Messages.timeout, defaultFunctionTimeoutSeconds) +
     parameter(TwitterConnectionTimeout, Messages.connectionTimeout, defaultConnectionTimeout) +
-    parameter(TwitterRetryPolicy, Messages.retryPolicy, Retries.Default.toString)
+    parameter(TwitterRetryPolicy, Messages.retryPolicy, defaultRetryPolicy)
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++
-    sqsQueueToLambdaFunction[TwitterEvent, TwitterFunction](
+    handleSqsMessagesWithLambdaFunction[TwitterEvent, TwitterFunction](
       Messages.description,
-      ref(TwitterS3Bucket),
-      ref(TwitterS3Key),
-      ref(TwitterMemorySize),
-      ref(TwitterTimeout),
-      permissions = Seq(),
+      Twitter.toLowerCase,
+      ref(TwitterMemorySizeMB),
+      ref(TwitterTimeoutSeconds),
       environment = Map(
         TwitterQueueName -> sqsQueueName[TwitterEvent],
         TwitterBearerToken -> resolveSecret(TwitterBearerToken),

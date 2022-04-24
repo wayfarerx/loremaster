@@ -26,26 +26,26 @@ trait TwitterService extends (TwitterEvent => Task[Unit])
 /**
  * Definitions associated with Twitter services.
  */
-object TwitterService extends ((Log, Retries, TwitterClient, Publisher[TwitterEvent]) => TwitterService) :
+object TwitterService extends ((Log, RetryPolicy, TwitterClient, Publisher[TwitterEvent]) => TwitterService) :
 
   /**
    * Creates an implementation of the Twitter service.
    *
    * @param log       The log to use.
-   * @param retries   The retry policy to use.
+   * @param retryPolicy   The retry policy to use.
    * @param client    The Twitter client to use.
    * @param publisher The tweet publisher to retry with.
    * @return An implementation of the Twitter service.
    */
   override def apply(
     log: Log,
-    retries: Retries,
+    retryPolicy: RetryPolicy,
     client: TwitterClient,
     publisher: Publisher[TwitterEvent]
   ): TwitterService = event =>
     (client.postTweet(event.book) *> log.info(Messages.tweeted(event))).catchSome {
       case problem if problem.shouldRetry =>
-        retries(event).fold(Task.fail(problem)) { backoff =>
+        retryPolicy(event).fold(Task.fail(problem)) { backoff =>
           log.warn(Messages.retryingTweet(event, backoff)) *> publisher(event.next, backoff)
         }
     }

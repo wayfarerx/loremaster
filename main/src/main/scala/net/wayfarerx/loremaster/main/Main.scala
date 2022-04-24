@@ -18,33 +18,33 @@ import java.nio.charset.StandardCharsets
 
 import io.circe.Json.{fromFields, fromString, obj}
 
-import zio.{App, ExitCode, Task, UIO, URIO, ZEnv, ZManaged}
+import zio.{ExitCode, Task, Runtime, UIO, URIO, ZEnv, ZManaged}
 import zio.console
 
 /**
  * A program that generates the AWS CloudFormation template.
  */
-object Main extends App :
+object Main :
 
-  /** The deployment to generate from. */
-  private lazy val deployment =
-    new twitter.deployment.TwitterDeployment {}
-
-  /* Write the generated template to the specified file. */
-  override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
-    args match
-      case Nil => ZManaged.succeed(System.out)
-      case file :: Nil => ZManaged.fromAutoCloseable(Task(PrintWriter(File(file), StandardCharsets.UTF_8.toString)))
-      case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
-  }.use { output =>
-    Task {
-      output.append(emitJson(obj(
-        "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
-        "Description" -> fromString(Messages.description),
-        "Parameters" -> fromFields(deployment.parameters),
-        "Resources" -> fromFields(deployment.resources)
-      )))
+  def main(args: Array[String]): Unit =
+    Runtime.default.unsafeRunTask {
+      {
+        args.toList match
+          case Nil => ZManaged.succeed(System.out)
+          case file :: Nil => ZManaged.fromAutoCloseable(Task(PrintWriter(File(file), StandardCharsets.UTF_8.toString)))
+          case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
+      }.use { output =>
+        Task {
+          val deployment =
+            new twitter.deployment.TwitterDeployment {}
+          output.append(emitJson(obj(
+            "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
+            "Description" -> fromString(Messages.description),
+            "Parameters" -> fromFields(deployment.parameters),
+            "Resources" -> fromFields(deployment.resources)
+          )))
+        } catchAll { thrown =>
+          console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown))
+        }
+      }
     }
-  }.map(_ => ExitCode.success).catchAll { thrown =>
-    console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown)) *> UIO(ExitCode.failure)
-  }.catchAll(UIO.die(_))

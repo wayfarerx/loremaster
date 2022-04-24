@@ -37,9 +37,6 @@ def AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
 /** The "2012-10-17" string. */
 inline def _2012_10_17 = "2012-10-17"
 
-/** The "AccountID" string. */
-inline def AccountID = "AccountID"
-
 /** The "Action" string. */
 inline def Action = "Action"
 
@@ -75,9 +72,6 @@ inline def Effect = "Effect"
 
 /** The "Environment" string. */
 inline def Environment = "Environment"
-
-/** The "Event" string. */
-inline def Event = "Event"
 
 /** The "EventSourceArn" string. */
 inline def EventSourceArn = "EventSourceArn"

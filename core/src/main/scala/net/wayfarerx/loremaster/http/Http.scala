@@ -74,9 +74,7 @@ object Http extends (HttpClient => Http) :
   type Result[T] = IO[HttpProblem, T]
 
   /** The headers to include in every HTTP request. */
-  private[http] val CommonHeaders: Map[String, String] = Map(
-    "User-Agent" -> Application
-  )
+  private[http] val CommonHeaders: Map[String, String] = Map("User-Agent" -> Application)
 
   /**
    * Creates an HTTP gateway.

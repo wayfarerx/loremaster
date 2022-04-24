@@ -17,7 +17,7 @@ import java.time.Instant
 
 import scala.concurrent.duration.*
 
-import event.Retries.{Backoff, Default, Termination}
+import event.RetryPolicy.{Backoff, Default, Termination}
 import configuration.*
 
 import org.scalatest.*
@@ -44,49 +44,49 @@ class RetriesTest extends AnyFlatSpec with should.Matchers :
   /** A backoff to use while testing. */
   private[this] val backoff = Backoff.Constant(delay)
 
-  "Retries" should "support constant backoff" in {
+  "RetryPolicy" should "support constant backoff" in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff.Constant(delay))
-    retries(event1) shouldBe Some(delay)
-    retries(event2) shouldBe Some(delay)
+    val retryPolicy = Default.copy(backoff = Backoff.Constant(delay))
+    retryPolicy(event1) shouldBe Some(delay)
+    retryPolicy(event2) shouldBe Some(delay)
   }
 
   it.should("support linear backoff") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff.Linear(delay))
-    retries(event1) shouldBe Some(delay)
-    retries(event2) shouldBe Some(delay * 2)
+    val retryPolicy = Default.copy(backoff = Backoff.Linear(delay))
+    retryPolicy(event1) shouldBe Some(delay)
+    retryPolicy(event2) shouldBe Some(delay * 2)
   }
 
   it.should("support golden backoff") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
     val event3 = event2.nextAttempt
-    val retries = Default.copy(backoff = Backoff.Golden(delay))
-    retries(event1) shouldBe Some(delay)
-    retries(event2) shouldBe Some(delay * 2)
+    val retryPolicy = Default.copy(backoff = Backoff.Golden(delay))
+    retryPolicy(event1) shouldBe Some(delay)
+    retryPolicy(event2) shouldBe Some(delay * 2)
   }
 
   it.should("support retry limits") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
-    val retries = event.Retries(backoff, Termination.LimitRetries(1))
-    retries(event1) shouldBe Some(delay)
-    retries(event2) shouldBe None
+    val retryPolicy = event.RetryPolicy(backoff, Termination.LimitRetries(1))
+    retryPolicy(event1) shouldBe Some(delay)
+    retryPolicy(event2) shouldBe None
   }
 
   it.should("support duration limits") in {
     val event1 = TestEvent()
-    val retries = event.Retries(backoff, Termination.LimitDuration(0.millis))
-    retries(event1) shouldBe None
+    val retryPolicy = event.RetryPolicy(backoff, Termination.LimitDuration(0.millis))
+    retryPolicy(event1) shouldBe None
   }
 
   it.should("support parsing configurations") in {
-    val config = Configuration.Data[event.Retries]
+    val config = Configuration.Data[event.RetryPolicy]
     config("") shouldBe None
     config("3 seconds") shouldBe Some(Default.copy(backoff = Backoff.Constant(3.seconds)))
     config("+4 seconds") shouldBe Some(Default.copy(backoff = Backoff.Linear(4.seconds)))
@@ -94,9 +94,9 @@ class RetriesTest extends AnyFlatSpec with should.Matchers :
     config(":") shouldBe None
     config(":3") shouldBe Some(Default.copy(termination = Termination.LimitRetries(3)))
     config(":3 seconds") shouldBe Some(Default.copy(termination = Termination.LimitDuration(3.seconds)))
-    config("3 seconds:3") shouldBe Some(event.Retries(Backoff.Constant(3.seconds), Termination.LimitRetries(3)))
-    config("+4 seconds:4") shouldBe Some(event.Retries(Backoff.Linear(4.seconds), Termination.LimitRetries(4)))
-    config("~5 seconds:5") shouldBe Some(event.Retries(Backoff.Golden(5.seconds), Termination.LimitRetries(5)))
+    config("3 seconds:3") shouldBe Some(event.RetryPolicy(Backoff.Constant(3.seconds), Termination.LimitRetries(3)))
+    config("+4 seconds:4") shouldBe Some(event.RetryPolicy(Backoff.Linear(4.seconds), Termination.LimitRetries(4)))
+    config("~5 seconds:5") shouldBe Some(event.RetryPolicy(Backoff.Golden(5.seconds), Termination.LimitRetries(5)))
   }
 
   /** An event to test with. */

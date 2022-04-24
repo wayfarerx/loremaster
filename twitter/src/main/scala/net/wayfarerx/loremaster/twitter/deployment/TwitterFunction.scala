@@ -39,12 +39,12 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] :
         logFactory <- RIO.service[LogFactory]
         log <- logFactory.log[TwitterService]
         config <- RIO.service[Configuration]
-        retries <- config[Retries](TwitterRetryPolicy)
+        retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
         connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
         bearerToken <- config[String](TwitterBearerToken)
         client <- Http(connectionTimeout).map(TwitterClient(_, bearerToken))
         publisher <- config[String](TwitterQueueName).map(SqsPublisher[TwitterEvent](_))
-      yield TwitterService(log, retries, client, publisher)
+      yield TwitterService(log, retryPolicy, client, publisher)
     }
 
   /* Publish the specified book to Twitter. */

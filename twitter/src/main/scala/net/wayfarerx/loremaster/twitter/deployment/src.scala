@@ -21,17 +21,11 @@ import deployments.*
 /** The Twitter string. */
 private inline def Twitter = "Twitter"
 
-/** The name of the S3 bucket parameter that contains the Twitter code. */
-inline def TwitterS3Bucket = s"$Twitter$S3Bucket"
-
-/** The name of the S3 key parameter that contains the Twitter code. */
-inline def TwitterS3Key = s"$Twitter$S3Key"
-
 /** The Twitter memory size variable name. */
-inline def TwitterMemorySize = s"$Twitter$MemorySize"
+inline def TwitterMemorySizeMB = s"$Twitter${MemorySize}MB"
 
 /** The Twitter timeout variable name. */
-inline def TwitterTimeout = s"$Twitter$Timeout"
+inline def TwitterTimeoutSeconds = s"$Twitter${Timeout}Seconds"
 
 /** The Twitter queue name variable name. */
 inline def TwitterQueueName: String = s"${Twitter}QueueName"
