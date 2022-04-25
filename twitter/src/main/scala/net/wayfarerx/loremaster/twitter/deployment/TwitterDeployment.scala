@@ -29,23 +29,29 @@ trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
   override def parameters: Entries = super.parameters +
-    parameter(TwitterMemorySizeMB, Messages.memorySize, defaultFunctionMemorySizeMB) +
-    parameter(TwitterTimeoutSeconds, Messages.timeout, defaultFunctionTimeoutSeconds) +
+    parameter(TwitterMemorySizeInMB, Messages.memorySize, defaultFunctionMemorySizeInMB) +
+    parameter(TwitterTimeoutInSeconds, Messages.timeout, defaultFunctionTimeoutInSeconds) +
     parameter(TwitterConnectionTimeout, Messages.connectionTimeout, defaultConnectionTimeout) +
-    parameter(TwitterRetryPolicy, Messages.retryPolicy, defaultRetryPolicy)
+    parameter(TwitterRetryPolicy, Messages.retryPolicy, defaultRetryPolicy) +
+    parameter(TwitterEnabled, Messages.enabled, defaultEnabled) +
+    parameter(TwitterBatchSize, Messages.batchSize, defaultBatchSize) +
+    parameter(TwitterMaximumBatchingWindowInSeconds, Messages.maxBatchingWindow, defaultMaximumBatchingWindowInSeconds)
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++
     handleSqsMessagesWithLambdaFunction[TwitterEvent, TwitterFunction](
       Messages.description,
       Twitter.toLowerCase,
-      ref(TwitterMemorySizeMB),
-      ref(TwitterTimeoutSeconds),
+      ref(TwitterMemorySizeInMB),
+      ref(TwitterTimeoutInSeconds),
       environment = Map(
         TwitterQueueName -> sqsQueueName[TwitterEvent],
         TwitterBearerToken -> resolveSecret(TwitterBearerToken),
         TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
         TwitterRetryPolicy -> ref(TwitterRetryPolicy)
       ),
+      ref(TwitterEnabled),
+      ref(TwitterBatchSize),
+      ref(TwitterMaximumBatchingWindowInSeconds),
       Domain -> Twitter
     )

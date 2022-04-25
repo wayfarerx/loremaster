@@ -34,3 +34,9 @@ private object Messages:
   def connectionTimeout: String = s"The $Application Twitter connection timeout."
 
   def retryPolicy: String = s"The $Application Twitter retry policy."
+
+  def enabled: String = s"The $Application Twitter enablement state."
+
+  def batchSize: String = s"The $Application Twitter batch size."
+
+  def maxBatchingWindow: String = s"The $Application Twitter maximum batching window in seconds."

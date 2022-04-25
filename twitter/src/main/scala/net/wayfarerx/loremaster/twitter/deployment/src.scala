@@ -22,10 +22,10 @@ import deployments.*
 private inline def Twitter = "Twitter"
 
 /** The Twitter memory size variable name. */
-inline def TwitterMemorySizeMB = s"$Twitter${MemorySize}MB"
+inline def TwitterMemorySizeInMB = s"$Twitter${MemorySize}InMB"
 
 /** The Twitter timeout variable name. */
-inline def TwitterTimeoutSeconds = s"$Twitter${Timeout}Seconds"
+inline def TwitterTimeoutInSeconds = s"$Twitter${Timeout}InSeconds"
 
 /** The Twitter queue name variable name. */
 inline def TwitterQueueName: String = s"${Twitter}QueueName"
@@ -38,3 +38,12 @@ inline def TwitterConnectionTimeout: String = s"${Twitter}ConnectionTimeout"
 
 /** The Twitter retry policy variable name. */
 inline def TwitterRetryPolicy = s"${Twitter}RetryPolicy"
+
+/** The Twitter enablement variable name. */
+inline def TwitterEnabled = s"${Twitter}Enabled"
+
+/** The Twitter batch size variable name. */
+inline def TwitterBatchSize = s"${Twitter}BatchSize"
+
+/** The Twitter maximum batching window variable name. */
+inline def TwitterMaximumBatchingWindowInSeconds = s"${Twitter}MaximumBatchingWindowInSeconds"

@@ -57,16 +57,25 @@ trait Deployment:
   // Defaults
 
   /** The default memory size for Lambda functions in megabytes. */
-  protected final def defaultFunctionMemorySizeMB: Int = 1024
+  protected final def defaultFunctionMemorySizeInMB: Int = 1024
 
   /** The default timeout for Lambda functions in seconds. */
-  protected final def defaultFunctionTimeoutSeconds: Long = 15.minutes.toSeconds
+  protected final def defaultFunctionTimeoutInSeconds: Long = 15.minutes.toSeconds
 
-  /** The default timeout for external connections in seconds. */
+  /** The default timeout for external connections. */
   protected final def defaultConnectionTimeout: FiniteDuration = 5.seconds
 
-  /** The default timeout for Lambda functions in seconds. */
+  /** The default retry policy for failed events. */
   protected final def defaultRetryPolicy: RetryPolicy = RetryPolicy.Default
+
+  /** The default enablement state for function mappings. */
+  protected final def defaultEnabled: Boolean = true
+
+  /** The default batch size for function mappings. */
+  protected final def defaultBatchSize: Int = 10
+
+  /** The default maximum batching window for function mappings in seconds. */
+  protected final def defaultMaximumBatchingWindowInSeconds: Long = 0L
 
   // Names
 
@@ -132,6 +141,22 @@ trait Deployment:
    */
   protected final def eventSourceMappingName[T: ClassTag]: String =
     s"$Application${name[T]}SourceMapping"
+
+  /**
+   * Returns the ARN for the specified service and name.
+   *
+   * @param service The service to resolve.
+   * @param name    The name to resolve.
+   * @return The ARN for the specified service and name.
+   */
+  protected final def arn(service: String, name: Json): Json =
+    join(":",
+      s"arn:aws",
+      service,
+      ref("AWS::Region"),
+      ref("AWS::AccountId"),
+      name
+    )
 
   // Functions
 
@@ -253,27 +278,26 @@ trait Deployment:
    * Generates an SQS to Lambda event source mapping definition.
    *
    * @tparam T The type of event the mapping manages.
-   * @param visibilityTimeout The amount of time a message delivered to a function is invisible.
+   * @param enabled                        The enablement state of the mapping.
+   * @param batchSize                      The batch size of the mapping.
+   * @param maximumBatchingWindowInSeconds The maximum batching window of the mapping.
    * @return An SQS to Lambda event source mapping definition.
    */
-  private final def sqsToLambdaMapping[T: ClassTag](visibilityTimeout: Json): Entries =
+  private final def sqsToLambdaMapping[T: ClassTag](
+    enabled: Json,
+    batchSize: Json,
+    maximumBatchingWindowInSeconds: Json
+  ): Entries =
     val functionName = lambdaFunctionName[T]
     Entries(
       eventSourceMappingName[T] -> obj(
         Type -> "AWS::Lambda::EventSourceMapping",
         Properties -> obj(
-          EventSourceArn -> join(":",
-            "arn:aws:sqs",
-            ref("AWS::Region"),
-            ref("AWS::AccountId"),
-            sqsQueueName[T]
-          ),
-          FunctionName -> join(":",
-            "arn:aws:lambda",
-            ref("AWS::Region"),
-            ref("AWS::AccountId"),
-            functionName
-          )
+          Enabled -> enabled,
+          BatchSize -> batchSize,
+          MaximumBatchingWindowInSeconds -> maximumBatchingWindowInSeconds,
+          EventSourceArn -> arn("sqs", sqsQueueName[T]),
+          FunctionName -> arn("lambda", functionName)
         ),
         "DependsOn" -> functionName
       )
@@ -284,12 +308,15 @@ trait Deployment:
    *
    * @tparam T The type of SQS messages to handle.
    * @tparam F The type of the function handler implementation.
-   * @param library     The library that contains the function.
-   * @param description The description of the function.
-   * @param memorySize  The amount of memory available to the function in MB.
-   * @param timeout     The amount of time the function can run in seconds.
-   * @param environment The environment that the function executes in.
-   * @param tags        The tags to apply.
+   * @param library                        The library that contains the function.
+   * @param description                    The description of the function.
+   * @param memorySize                     The amount of memory available to the function in MB.
+   * @param timeout                        The amount of time the function can run in seconds.
+   * @param environment                    The environment that the function executes in.
+   * @param enabled                        The enablement state of the mapping.
+   * @param batchSize                      The batch size of the mapping.
+   * @param maximumBatchingWindowInSeconds The maximum batching window of the mapping.
+   * @param tags                           The tags to apply.
    * @return A handler for SQS messages of type `T` with a Lambda function of type `F`.
    */
   protected final def handleSqsMessagesWithLambdaFunction[T: ClassTag, F: ClassTag](
@@ -298,6 +325,9 @@ trait Deployment:
     memorySize: Json,
     timeout: Json,
     environment: Map[String, Json],
+    enabled: Json,
+    batchSize: Json,
+    maximumBatchingWindowInSeconds: Json,
     tags: Tag*
   ): Entries =
     lambdaFunction[T](
@@ -309,7 +339,7 @@ trait Deployment:
       timeout,
       environment,
       tags *
-    ) ++ sqsToLambdaMapping[T](timeout)
+    ) ++ sqsToLambdaMapping[T](enabled, batchSize, maximumBatchingWindowInSeconds)
 
   // Implementation
 

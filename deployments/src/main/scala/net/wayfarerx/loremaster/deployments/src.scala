@@ -52,6 +52,9 @@ inline def AssumeRolePolicyDocument = "AssumeRolePolicyDocument"
 /** The "AWS" string. */
 inline def AWS = "AWS"
 
+/** The "BatchSize" string. */
+inline def BatchSize = "BatchSize"
+
 /** The "Code" string. */
 inline def Code = "Code"
 
@@ -70,6 +73,9 @@ inline def Domain = "Domain"
 /** The "Effect" string. */
 inline def Effect = "Effect"
 
+/** The "Enabled" string. */
+inline def Enabled = "Enabled"
+
 /** The "Environment" string. */
 inline def Environment = "Environment"
 
@@ -87,6 +93,9 @@ inline def Key = "Key"
 
 /** The "Lambda" string. */
 inline def Lambda = "Lambda"
+
+/** The "MaximumBatchingWindowInSeconds" name. */
+inline def MaximumBatchingWindowInSeconds: String = "MaximumBatchingWindowInSeconds"
 
 /** The "MemorySize" name. */
 inline def MemorySize: String = "MemorySize"

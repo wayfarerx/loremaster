@@ -32,6 +32,9 @@ trait Parameter[T] extends (T => String) :
  */
 object Parameter:
 
+  /** The given boolean parameter type support. */
+  given Parameter[Boolean] = Implementation("String", _.toString)
+
   /** The given integer parameter type support. */
   given Parameter[Int] = Implementation("Number", _.toString)
 
