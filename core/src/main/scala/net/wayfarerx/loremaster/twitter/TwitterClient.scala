@@ -13,12 +13,17 @@
 package net.wayfarerx.loremaster
 package twitter
 
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import twitter4j.{Twitter, TwitterException, TwitterFactory}
+import twitter4j.conf.ConfigurationBuilder
+
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
 import zio.IO
 
-import http.*
 import model.*
 
 /**
@@ -35,41 +40,55 @@ trait TwitterClient:
   def postTweet(book: Book): IO[TwitterProblem, Unit]
 
 /**
- * Definitions associated with Twitter clients.
+ * Factory for Twitter clients.
  */
-object TwitterClient extends ((Http, String) => TwitterClient) :
-
-  /** The Twitter HTTP endpoint to connect to for tweeting. */
-  val TweetsEndpoint = "https://api.twitter.com/2/tweets"
+object TwitterClient extends ((String, String, String, String, FiniteDuration) => TwitterClient) :
 
   /**
    * Creates a Twitter client.
    *
-   * @param http        The http service to use when connecting to Twitter.
-   * @param bearerToken The bearer token to authenticate to Twitter with.
+   * @param consumerKey       The consumer key to authenticate to Twitter with.
+   * @param consumerSecret    The consumer secret to authenticate to Twitter with.
+   * @param accessToken       The access token to authenticate to Twitter with.
+   * @param accessTokenSecret The access token secret to authenticate to Twitter with.
+   * @param connectionTimeout The timeout to use for Twitter connections.
    * @return A new Twitter client.
    */
-  override def apply(http: Http, bearerToken: String): TwitterClient = book => {
-    http.post(
-      TweetsEndpoint,
-      emitJson(Body(text = Some(book.toString))),
-      "Authorization" -> s"Bearer $bearerToken", "Content-Type" -> "application/json"
-    ) *> IO.unit
-  } catchAll { problem =>
-    IO.fail(TwitterProblem(Messages.twitterFailure(problem.message), Some(problem), problem.shouldRetry))
-  }
+  override def apply(
+    consumerKey: String,
+    consumerSecret: String,
+    accessToken: String,
+    accessTokenSecret: String,
+    connectionTimeout: FiniteDuration
+  ): TwitterClient = apply(
+    TwitterFactory(
+      ConfigurationBuilder()
+        .setOAuthConsumerKey(consumerKey)
+        .setOAuthConsumerSecret(consumerSecret)
+        .setOAuthAccessToken(accessToken)
+        .setOAuthAccessTokenSecret(accessTokenSecret)
+        .setHttpConnectionTimeout(connectionTimeout.toMillis.toInt)
+        .build
+    ).getInstance
+  )
 
   /**
-   * The body of a tweet.
+   * Creates a Twitter client.
    *
-   * @param text The optional text of the tweet.
+   * @param connection The connection to Twitter.
+   * @return A new Twitter client.
    */
-  case class Body(text: Option[String] = None)
-
-  /**
-   * Factory for tweet bodies.
-   */
-  object Body extends (Option[String] => Body) :
-
-    /** The given encoding of tweet bodies to JSON. */
-    given Encoder[Body] = deriveEncoder[Body].mapJson(_.dropNullValues)
+  def apply(connection: Twitter): TwitterClient = book =>
+    IO(connection.updateStatus(book.toString)) catchAll {
+      case thrown: TwitterException => IO.fail(
+        TwitterProblem(
+          Messages.twitterFailure(thrown.getMessage),
+          Some(thrown),
+          thrown.getStatusCode == 429 || thrown.getStatusCode >= 500
+        )
+      )
+      case NonFatal(nonFatal) =>
+        IO.fail(TwitterProblem(Messages.twitterError(nonFatal.getMessage), Some(nonFatal)))
+      case fatal =>
+        IO.die(fatal)
+    } map (_ => ())

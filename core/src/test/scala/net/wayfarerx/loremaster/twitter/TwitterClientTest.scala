@@ -13,15 +13,15 @@
 package net.wayfarerx.loremaster
 package twitter
 
+import twitter4j.Twitter
+
 import zio.{IO, Runtime}
 
-import http.*
 import model.*
 
 import org.scalatest.*
 import flatspec.*
 import matchers.*
-
 import org.mockito.Mockito.*
 import org.mockito.ArgumentMatchers.*
 import org.scalatestplus.mockito.MockitoSugar
@@ -38,12 +38,8 @@ class TwitterClientTest extends AnyFlatSpec with should.Matchers with MockitoSug
   private val testBook = Book.of("A", "B")
 
   "TitterClient" should "post tweets" in {
-    val http = mock[Http]
-    when(http.post(
-      TwitterClient.TweetsEndpoint,
-      emitJson(TwitterClient.Body(text = Some(testBook.toString))),
-      "Authorization" -> s"Bearer $testBearer",
-      "Content-Type" -> "application/json"
-    )) thenReturn IO(Map.empty)
-    Runtime.default.unsafeRunTask(TwitterClient(http, testBearer).postTweet(testBook)) shouldBe ()
+    val mockStatus = mock[twitter4j.Status]
+    val mockTwitter = mock[Twitter]
+    when(mockTwitter.updateStatus(testBook.toString)) thenReturn mockStatus
+    Runtime.default.unsafeRunTask(TwitterClient(mockTwitter).postTweet(testBook)) shouldBe ()
   }

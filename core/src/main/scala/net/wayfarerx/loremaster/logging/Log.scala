@@ -174,7 +174,7 @@ object Log extends ((String, Log.Level, LogEmitter) => Log) :
   object Level:
 
     /** Logging levels indexed by their lowercase representations. */
-    private[this] val index = Level.values.iterator.map(lvl => lvl.toString.toLowerCase -> lvl).toMap
+    private[this] val index = Level.values.iterator.map(level => level.toString.toLowerCase -> level).toMap
 
     /** The ordering of log levels. */
     given Ordering[Level] = _.ordinal - _.ordinal

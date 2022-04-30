@@ -21,7 +21,6 @@ import zio.{Has, RLayer, RIO, ZLayer}
 import configuration.*
 import deployments.*
 import event.*
-import http.*
 import logging.*
 
 /**
@@ -40,11 +39,18 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] :
         log <- logFactory.log[TwitterService]
         config <- RIO.service[Configuration]
         retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
+        consumerKey <- config[String](TwitterConsumerKey)
+        consumerSecret <- config[String](TwitterConsumerSecret)
+        accessToken <- config[String](TwitterAccessToken)
+        accessTokenSecret <- config[String](TwitterAccessTokenSecret)
         connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
-        bearerToken <- config[String](TwitterBearerToken)
-        client <- Http(connectionTimeout).map(TwitterClient(_, bearerToken))
-        publisher <- config[String](TwitterQueueName).map(SqsPublisher[TwitterEvent](_))
-      yield TwitterService(log, retryPolicy, client, publisher)
+        queueName <- config[String](TwitterQueueName)
+      yield TwitterService(
+        log,
+        retryPolicy,
+        TwitterClient(consumerKey, consumerSecret, accessToken, accessTokenSecret, connectionTimeout),
+        SqsPublisher[TwitterEvent](queueName)
+      )
     }
 
   /* Publish the specified book to Twitter. */

@@ -1,7 +1,7 @@
 import Dependencies._
 
 ThisBuild / organization := "net.wayfarerx"
-ThisBuild / version := "0.1.0"
+ThisBuild / version := "0.1.1"
 ThisBuild / scalaVersion := Scala3Version
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores")
 
@@ -17,23 +17,11 @@ lazy val Core = "core"
 /** The "deployments" string". */
 lazy val Deployments = "deployments"
 
-/** The "deployment" string". */
-lazy val Deployment = "deployment"
-
-/** The "function" string". */
-lazy val Function = "function"
-
-/** The "main" string". */
-lazy val Main = "main"
-
 /** The "twitter" string". */
 lazy val Twitter = "twitter"
 
-/** The "Version" string. */
-lazy val Version = "Version"
-
-/** The name of the S3 bucket that stores the Lambda functions. */
-lazy val LambdaS3Bucket = s"$Application-lambda-${Function}s"
+/** The "main" string". */
+lazy val Main = "main"
 
 /** The key for shipping the current build. */
 lazy val ship = taskKey[Unit]("Ships the current build")
@@ -66,17 +54,17 @@ def librarySettings(domain: String): Seq[Def.Setting[_]] =
  */
 def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.Setting[_]] = {
   val proguardJavaOptions = Seq(s"-Xmx$proguardHeapSize")
+  val mainFunction = s"$Package.$domain.deployment.${domain.capitalize}Function"
   commonSettings(domain) ++ Seq(
     proguard / javaOptions := proguardJavaOptions,
     Proguard / proguard / javaOptions := proguardJavaOptions,
     Proguard / proguardMerge := true,
     Proguard / proguardOptions ++= Seq("-dontobfuscate", "-dontoptimize", "-dontnote", "-dontwarn", "-ignorewarnings"),
-    Proguard / proguardOptions +=
-      ProguardOptions.keepMain(s"$Package.$domain.$Deployment.${domain.capitalize}${Function.capitalize}"),
+    Proguard / proguardOptions += ProguardOptions.keepMain(mainFunction),
     Proguard / proguardInputs := (Compile / dependencyClasspath).value.files,
     Proguard / proguardFilteredInputs ++= ProguardOptions.noFilter((Compile / packageBin).value),
     Proguard / proguardMergeStrategies += ProguardMerge.discard("META-INF/.*".r),
-    s3Bucket := LambdaS3Bucket,
+    s3Bucket := s"$Application-lambda-functions",
     s3Key := s"$domain/$Application-$domain-${version.value}.jar",
     uploadedArtifact := (Proguard / proguardOutputs).map(_.head).value,
     ship := Def.sequential(Proguard / proguard, publish).value
@@ -103,6 +91,7 @@ lazy val core = project.in(file(Core))
       CirceCore,
       CirceGeneric,
       CirceParser,
+      Twitter4JCore,
       Zio
     ),
     testSettings
@@ -131,9 +120,9 @@ lazy val main = project.in(file(Main))
   .enablePlugins(CloudFormationStack)
   .settings(
     commonSettings(Main),
-    Compile / run / mainClass := Some("net.wayfarerx.loremaster.main.Main"),
+    Compile / run / mainClass := Some(s"$Package.$Main.${Main.capitalize}"),
     stackName := Application.capitalize,
-    stackParameters := List(Version -> version.value),
+    stackParameters := List("Version" -> version.value),
     ship := deployStack.value
   ).dependsOn(
   twitter

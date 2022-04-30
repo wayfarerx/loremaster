@@ -29,5 +29,8 @@ private object Messages:
   def twitterFailure(message: String): String =
     s"Twitter failure: $message"
 
+  def twitterError(message: String): String =
+    s"Twitter error: $message"
+
   private[this] def format(event: TwitterEvent): String =
     event.book.paragraphs.iterator mkString " "

@@ -16,6 +16,12 @@ object Dependencies {
   lazy val CirceGeneric = CirceGroup %% "circe-generic" % CirceVersion
   lazy val CirceParser = CirceGroup %% "circe-parser" % CirceVersion
 
+  // Twitter4J
+
+  def Twitter4JGroup = "org.twitter4j"
+  def Twitter4JVersion = "4.0.7"
+  lazy val Twitter4JCore = Twitter4JGroup % "twitter4j-core" % Twitter4JVersion
+
   // ZIO
 
   lazy val Zio = "dev.zio" %% "zio" % "1.0.12"

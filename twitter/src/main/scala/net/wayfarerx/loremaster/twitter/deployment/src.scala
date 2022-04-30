@@ -30,8 +30,17 @@ inline def TwitterTimeoutInSeconds = s"$Twitter${Timeout}InSeconds"
 /** The Twitter queue name variable name. */
 inline def TwitterQueueName: String = s"${Twitter}QueueName"
 
-/** The Twitter bearer token variable name. */
-inline def TwitterBearerToken: String = s"${Twitter}BearerToken"
+/** The Twitter consumer key variable name. */
+inline def TwitterConsumerKey: String = s"${Twitter}ConsumerKey"
+
+/** The Twitter consumer secret variable name. */
+inline def TwitterConsumerSecret: String = s"${Twitter}ConsumerSecret"
+
+/** The Twitter access token variable name. */
+inline def TwitterAccessToken: String = s"${Twitter}AccessToken"
+
+/** The Twitter access token secret variable name. */
+inline def TwitterAccessTokenSecret: String = s"${Twitter}AccessTokenSecret"
 
 /** The Twitter connection timeout variable name. */
 inline def TwitterConnectionTimeout: String = s"${Twitter}ConnectionTimeout"

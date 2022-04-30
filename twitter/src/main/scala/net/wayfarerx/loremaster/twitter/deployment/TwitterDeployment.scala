@@ -45,10 +45,13 @@ trait TwitterDeployment extends Deployment :
       ref(TwitterMemorySizeInMB),
       ref(TwitterTimeoutInSeconds),
       environment = Map(
-        TwitterQueueName -> sqsQueueName[TwitterEvent],
-        TwitterBearerToken -> resolveSecret(TwitterBearerToken),
+        TwitterConsumerKey -> resolveSecret(TwitterConsumerKey),
+        TwitterConsumerSecret -> resolveSecret(TwitterConsumerSecret),
+        TwitterAccessToken -> resolveSecret(TwitterAccessToken),
+        TwitterAccessTokenSecret -> resolveSecret(TwitterAccessTokenSecret),
         TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
-        TwitterRetryPolicy -> ref(TwitterRetryPolicy)
+        TwitterRetryPolicy -> ref(TwitterRetryPolicy),
+        TwitterQueueName -> sqsQueueName[TwitterEvent]
       ),
       ref(TwitterEnabled),
       ref(TwitterBatchSize),
