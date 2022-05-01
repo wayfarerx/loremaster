@@ -18,6 +18,4 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Run tests
-        run: sbt ;clean;test
-        env:
-          AWS_DEFAULT_REGION: us-west-2
+        run: AWS_DEFAULT_REGION=us-west-2 sbt ;clean;test
