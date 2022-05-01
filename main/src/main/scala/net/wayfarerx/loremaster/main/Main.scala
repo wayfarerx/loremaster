@@ -27,6 +27,7 @@ import zio.console
 object Main :
 
   def main(args: Array[String]): Unit =
+    println(emitJson(twitter.TwitterEvent(model.Book(cats.data.NonEmptyList.one("TESTING")), java.time.Instant.now)))
     Runtime.default.unsafeRunTask {
       {
         args.toList match

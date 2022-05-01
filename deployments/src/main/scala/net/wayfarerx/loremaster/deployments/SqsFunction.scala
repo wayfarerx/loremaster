@@ -15,6 +15,8 @@ package deployments
 
 import scala.jdk.CollectionConverters.*
 
+
+import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import io.circe.Decoder
@@ -29,6 +31,7 @@ import logging.*
  * @tparam T The type of message this SQS function handles.
  */
 trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
+  self: RequestHandler[SQSEvent, String] =>
 
   /* Process a SQS event. */
   final override def apply(event: SQSEvent): RIO[Environment, Unit] = for

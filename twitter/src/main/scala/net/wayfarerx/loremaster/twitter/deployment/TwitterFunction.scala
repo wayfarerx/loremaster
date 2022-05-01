@@ -16,7 +16,10 @@ package deployment
 
 import scala.concurrent.duration.FiniteDuration
 
-import zio.{Has, RLayer, RIO, ZLayer}
+import com.amazonaws.services.lambda.runtime.RequestHandler
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
+
+import zio.{Has, RIO, RLayer, ZLayer}
 
 import configuration.*
 import deployments.*
@@ -26,7 +29,7 @@ import logging.*
 /**
  * An AWS Kinesis Lambda function that posts books to Twitter,
  */
-final class TwitterFunction extends SqsFunction[TwitterEvent] :
+final class TwitterFunction extends RequestHandler[SQSEvent, String] with SqsFunction[TwitterEvent] :
 
   /* The type of environment to use. */
   override type Environment = AwsEnv & Has[TwitterService]

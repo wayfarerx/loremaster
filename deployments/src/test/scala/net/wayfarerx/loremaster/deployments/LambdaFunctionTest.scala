@@ -13,14 +13,11 @@
 package net.wayfarerx.loremaster
 package deployments
 
-import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger}
-
+import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
 import zio.{RIO, RLayer, Task, ZLayer}
-
 import org.scalatest.*
 import flatspec.*
 import matchers.*
-
 import org.mockito.Mockito.*
 import org.mockito.ArgumentMatchers.*
 import org.scalatestplus.mockito.MockitoSugar
@@ -72,11 +69,13 @@ object LambdaFunctionTest:
    *
    * @param validate The function to validate requests with.
    */
-  final class TestFunction(validate: (TestRequest, TestRequest) => Task[Unit]) extends LambdaFunction[TestRequest] :
+  final class TestFunction(validate: (TestRequest, TestRequest) => Task[Unit])
+    extends LambdaFunction[TestRequest]
+    with RequestHandler[TestRequest, String] :
 
-    override type Environment = AwsEnv
+      override type Environment = AwsEnv
 
-    override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
+      override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
 
-    override def apply(request: TestRequest): RIO[Environment, Unit] =
-      validate(request, TestRequest.Valid)
+      override def apply(request: TestRequest): RIO[Environment, Unit] =
+        validate(request, TestRequest.Valid)

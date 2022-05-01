@@ -16,7 +16,7 @@ package deployments
 import scala.jdk.CollectionConverters.*
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
-import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger}
+import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
 
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
@@ -26,7 +26,6 @@ import zio.{RIO, RLayer, Task, UIO, URIO, ZLayer}
 import org.scalatest.*
 import org.scalatest.flatspec.*
 import org.scalatest.matchers.*
-
 import org.mockito.ArgumentMatchers.*
 import org.mockito.Mockito.*
 import org.scalatestplus.mockito.MockitoSugar
@@ -88,7 +87,9 @@ object SqsFunctionTest:
    *
    * @param validate The function to validate messages with.
    */
-  final class TestFunction(validate: (TestMessage, TestMessage) => UIO[Unit]) extends SqsFunction[TestMessage]:
+  final class TestFunction(validate: (TestMessage, TestMessage) => UIO[Unit])
+    extends SqsFunction[TestMessage]
+    with RequestHandler[SQSEvent, String] :
 
     override type Environment = AwsEnv
 

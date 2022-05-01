@@ -24,7 +24,8 @@ import logging.*
  *
  * @tparam T The type of request this Lambda function produces.
  */
-trait LambdaFunction[T] extends RequestHandler[T, String] :
+trait LambdaFunction[T] :
+  self: RequestHandler[T, String] =>
 
   /**
    * The type of environment to use.
