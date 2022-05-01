@@ -7,6 +7,9 @@ on:
 permissions:
   contents: read
 
+env:
+  AWS_DEFAULT_REGION: us-west-2
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,4 +21,6 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Run tests
-        run: AWS_DEFAULT_REGION=us-west-2 sbt ;clean;test
+        run: sbt ;clean;test
+        env:
+          AWS_DEFAULT_REGION: us-west-2
