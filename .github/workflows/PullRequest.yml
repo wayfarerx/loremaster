@@ -21,4 +21,4 @@ jobs:
       - name: Run Tests
         run: sbt ;clean;test
         env:
-          AWS_DEFAULT_REGION: us-east-2
+          AWS_REGION: us-east-2
