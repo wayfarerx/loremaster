@@ -19,6 +19,6 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Run Tests
-        run: sbt test
+        run: sbt ";clean;test"
         env:
           AWS_REGION: us-east-2
