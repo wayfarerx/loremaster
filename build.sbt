@@ -1,7 +1,7 @@
 import Dependencies._
 
 ThisBuild / organization := "net.wayfarerx"
-ThisBuild / version := "0.1.2"
+ThisBuild / version := "0.1.3"
 ThisBuild / scalaVersion := Scala3Version
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores")
 
