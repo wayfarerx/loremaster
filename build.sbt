@@ -23,8 +23,11 @@ lazy val Twitter = "twitter"
 /** The "main" string". */
 lazy val Main = "main"
 
-/** The key for shipping the current build. */
-lazy val ship = taskKey[Unit]("Ships the current build")
+/** The task key for shipping the current function builds. */
+lazy val shipFunctions = taskKey[Unit]("Ships the current function builds")
+
+/** The task key for shipping the current stack build. */
+lazy val shipStack = taskKey[Unit]("Ships the current stack build")
 
 /**
  * The settings used for all projects.
@@ -43,7 +46,9 @@ def commonSettings(domain: String): Seq[Def.Setting[_]] = Seq(
  * @return The settings used for library projects.
  */
 def librarySettings(domain: String): Seq[Def.Setting[_]] =
-  commonSettings(domain) :+ (ship := Def.unit(None))
+  commonSettings(domain) :+
+    (shipFunctions := Def.unit(None)) :+
+    (shipStack := Def.unit(None))
 
 /**
  * The settings used for Lambda function projects.
@@ -67,7 +72,8 @@ def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.S
     s3Bucket := s"$Application-lambda-functions",
     s3Key := s"$domain/$Application-$domain-${version.value}.jar",
     uploadedArtifact := (Proguard / proguardOutputs).map(_.head).value,
-    ship := Def.sequential(Proguard / proguard, publish).value
+    shipFunctions := Def.sequential(Proguard / proguard, publish).value,
+    shipStack := Def.unit(None)
   )
 }
 
@@ -123,7 +129,6 @@ lazy val main = project.in(file(Main))
     Compile / run / mainClass := Some(s"$Package.$Main.${Main.capitalize}"),
     stackName := Application.capitalize,
     stackParameters := List("Version" -> version.value),
-    ship := deployStack.value
-  ).dependsOn(
-  twitter
-)
+    shipFunctions := Def.unit(None),
+    shipStack := deployStack.value
+  ).dependsOn(twitter)

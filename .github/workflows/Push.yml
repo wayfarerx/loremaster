@@ -19,7 +19,7 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
       - name: Ship Code
-        run: sbt ";clean;twitter/ship;main/ship"
+        run: sbt ";clean;test;shipFunctions;shipStack"
         env:
           AWS_REGION: us-east-2
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
