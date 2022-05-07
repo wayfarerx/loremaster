@@ -46,9 +46,10 @@ def commonSettings(domain: String): Seq[Def.Setting[_]] = Seq(
  * @return The settings used for library projects.
  */
 def librarySettings(domain: String): Seq[Def.Setting[_]] =
-  commonSettings(domain) :+
-    (shipFunctions := Def.unit(None)) :+
-    (shipStack := Def.unit(None))
+  commonSettings(domain) ++ Seq(
+    shipFunctions := Def.unit(None),
+    shipStack := Def.unit(None)
+  )
 
 /**
  * The settings used for Lambda function projects.
@@ -58,21 +59,10 @@ def librarySettings(domain: String): Seq[Def.Setting[_]] =
  * @return The settings used for Lambda function projects.
  */
 def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.Setting[_]] = {
-  val proguardJavaOptions = Seq(s"-Xmx$proguardHeapSize")
-  val mainFunction = s"$Package.$domain.deployment.${domain.capitalize}Function"
   commonSettings(domain) ++ Seq(
-    proguard / javaOptions := proguardJavaOptions,
-    Proguard / proguard / javaOptions := proguardJavaOptions,
-    Proguard / proguardMerge := true,
-    Proguard / proguardOptions ++= Seq("-dontobfuscate", "-dontoptimize", "-dontnote", "-dontwarn", "-ignorewarnings"),
-    Proguard / proguardOptions += ProguardOptions.keepMain(mainFunction),
-    Proguard / proguardInputs := (Compile / dependencyClasspath).value.files,
-    Proguard / proguardFilteredInputs ++= ProguardOptions.noFilter((Compile / packageBin).value),
-    Proguard / proguardMergeStrategies += ProguardMerge.discard("META-INF/.*".r),
-    s3Bucket := s"$Application-lambda-functions",
+    s3Bucket := "loremaster-lambda-functions",
     s3Key := s"$domain/$Application-$domain-${version.value}.jar",
-    uploadedArtifact := (Proguard / proguardOutputs).map(_.head).value,
-    shipFunctions := Def.sequential(Proguard / proguard, publish).value,
+    shipFunctions := (s3Prefix / publish).value,
     shipStack := Def.unit(None)
   )
 }
@@ -117,7 +107,7 @@ lazy val deployments = project.in(file(Deployments))
 
 /** The Loremaster Twitter project. */
 lazy val twitter = project.in(file(Twitter))
-  .enablePlugins(SbtProguard, PublishToS3)
+  .enablePlugins(PublishToS3)
   .settings(functionSettings(Twitter))
   .dependsOn(core, deployments)
 
