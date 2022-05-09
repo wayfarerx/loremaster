@@ -87,7 +87,6 @@ lazy val core = project.in(file(Core))
       CirceCore,
       CirceGeneric,
       CirceParser,
-      Twitter4JCore,
       Zio
     ),
     testSettings
@@ -108,8 +107,10 @@ lazy val deployments = project.in(file(Deployments))
 /** The Loremaster Twitter project. */
 lazy val twitter = project.in(file(Twitter))
   .enablePlugins(PublishToS3)
-  .settings(functionSettings(Twitter))
-  .dependsOn(core, deployments)
+  .settings(
+    functionSettings(Twitter),
+    libraryDependencies += Twitter4JCore
+  ).dependsOn(core, deployments)
 
 /** The Loremaster main project. */
 lazy val main = project.in(file(Main))
