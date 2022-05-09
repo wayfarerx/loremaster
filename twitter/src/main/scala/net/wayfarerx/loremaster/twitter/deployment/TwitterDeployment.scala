@@ -29,28 +29,28 @@ trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
   override def parameters: Entries = super.parameters +
-    parameter(TwitterMemorySizeInMB, Messages.memorySize, defaultFunctionMemorySizeInMB) +
-    parameter(TwitterTimeoutInSeconds, Messages.timeout, defaultFunctionTimeoutInSeconds) +
-    parameter(TwitterConnectionTimeout, Messages.connectionTimeout, defaultConnectionTimeout) +
-    parameter(TwitterRetryPolicy, Messages.retryPolicy, defaultRetryPolicy) +
-    parameter(TwitterEnabled, Messages.enabled, defaultEnabled) +
-    parameter(TwitterBatchSize, Messages.batchSize, defaultBatchSize) +
-    parameter(TwitterMaximumBatchingWindowInSeconds, Messages.maxBatchingWindow, defaultMaximumBatchingWindowInSeconds)
+    parameter(TwitterMemorySizeInMB, Messages.memorySize, DefaultMemorySizeInMB) +
+    parameter(TwitterTimeoutInSeconds, Messages.timeout, DefaultTimeoutInSeconds) +
+    parameter(TwitterConnectionTimeout, Messages.connectionTimeout, DefaultConnectionTimeout) +
+    parameter(TwitterRetryPolicy, Messages.retryPolicy, DefaultRetryPolicy) +
+    parameter(TwitterEnabled, Messages.enabled, DefaultEnabled) +
+    parameter(TwitterBatchSize, Messages.batchSize, DefaultBatchSize) +
+    parameter(TwitterMaximumBatchingWindowInSeconds, Messages.maxBatchingWindow, DefaultMaximumBatchingWindowInSeconds)
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++
-    handleSqsMessagesWithLambdaFunction[TwitterEvent, TwitterFunction](
+    sqsQueueDeliversToLambdaFunction[TwitterEvent, TwitterFunction](
       Messages.description,
       Twitter.toLowerCase,
       ref(TwitterMemorySizeInMB),
       ref(TwitterTimeoutInSeconds),
       environment = Map(
+        TwitterRetryPolicy -> ref(TwitterRetryPolicy),
         TwitterConsumerKey -> resolveSecret(TwitterConsumerKey),
         TwitterConsumerSecret -> resolveSecret(TwitterConsumerSecret),
         TwitterAccessToken -> resolveSecret(TwitterAccessToken),
         TwitterAccessTokenSecret -> resolveSecret(TwitterAccessTokenSecret),
         TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
-        TwitterRetryPolicy -> ref(TwitterRetryPolicy),
         TwitterQueueName -> sqsQueueName[TwitterEvent]
       ),
       ref(TwitterEnabled),
