@@ -29,7 +29,7 @@ import logging.*
 /**
  * An AWS Kinesis Lambda function that posts books to Twitter,
  */
-final class TwitterFunction extends RequestHandler[SQSEvent, String] with SqsFunction[TwitterEvent] :
+final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
 
   /* The type of environment to use. */
   override type Environment = AwsEnv & Has[TwitterService]
@@ -51,7 +51,7 @@ final class TwitterFunction extends RequestHandler[SQSEvent, String] with SqsFun
       yield TwitterService(
         log,
         retryPolicy,
-        TwitterClient(consumerKey, consumerSecret, accessToken, accessTokenSecret, connectionTimeout),
+        TwitterConnection(consumerKey, consumerSecret, accessToken, accessTokenSecret, connectionTimeout),
         SqsPublisher[TwitterEvent](queueName)
       )
     }

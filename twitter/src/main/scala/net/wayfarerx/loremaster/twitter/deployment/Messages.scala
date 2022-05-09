@@ -40,3 +40,7 @@ private object Messages:
   def batchSize: String = s"The $Application $Twitter batch size."
 
   def maxBatchingWindow: String = s"The $Application $Twitter maximum batching window in seconds."
+
+  def twitterError(message: String): String = s"Twitter error: $message"
+
+  def twitterFailure(message: String): String = s"Twitter failure: $message"

@@ -20,17 +20,8 @@ import scala.concurrent.duration.*
  */
 private object Messages:
 
-  def tweeted(event: TwitterEvent): String =
-    s"Tweeted: ${format(event)}"
+  def tweeted(event: TwitterEvent): String = s"Tweeted: ${format(event)}"
 
-  def retryingTweet(event: TwitterEvent, backoff: FiniteDuration) =
-    s"Retrying tweet after $backoff: ${format(event)}"
+  def retryingTweet(event: TwitterEvent, backoff: FiniteDuration) = s"Retrying tweet after $backoff: ${format(event)}"
 
-  def twitterFailure(message: String): String =
-    s"Twitter failure: $message"
-
-  def twitterError(message: String): String =
-    s"Twitter error: $message"
-
-  private[this] def format(event: TwitterEvent): String =
-    event.book.paragraphs.iterator mkString " "
+  private[this] def format(event: TwitterEvent): String = event.book.paragraphs.iterator mkString " "
