@@ -57,25 +57,25 @@ trait Deployment:
   // Defaults
 
   /** The default memory size for Lambda functions in megabytes. */
-  protected final def defaultFunctionMemorySizeInMB: Int = 1024
+  protected final def DefaultMemorySizeInMB: Int = 1024
 
   /** The default timeout for Lambda functions in seconds. */
-  protected final def defaultFunctionTimeoutInSeconds: Long = 15.minutes.toSeconds
+  protected final def DefaultTimeoutInSeconds: Long = 15.minutes.toSeconds
 
   /** The default timeout for external connections. */
-  protected final def defaultConnectionTimeout: FiniteDuration = 5.seconds
+  protected final def DefaultConnectionTimeout: FiniteDuration = 5.seconds
 
   /** The default retry policy for failed events. */
-  protected final def defaultRetryPolicy: RetryPolicy = RetryPolicy.Default
+  protected final def DefaultRetryPolicy: RetryPolicy = RetryPolicy.Default
 
   /** The default enablement state for function mappings. */
-  protected final def defaultEnabled: Boolean = true
+  protected final def DefaultEnabled: Boolean = true
 
   /** The default batch size for function mappings. */
-  protected final def defaultBatchSize: Int = 10
+  protected final def DefaultBatchSize: Int = 10
 
   /** The default maximum batching window for function mappings in seconds. */
-  protected final def defaultMaximumBatchingWindowInSeconds: Long = 0L
+  protected final def DefaultMaximumBatchingWindowInSeconds: Long = 0L
 
   // Names
 
@@ -83,13 +83,13 @@ trait Deployment:
   protected final def lambdaS3Bucket: String = s"${Application.toLowerCase}-lambda-functions"
 
   /**
-   * Generates the S3 key for the specified Lambda function library.
+   * Generates the S3 key for the specified Lambda function domain.
    *
-   * @param library The name of the Lambda function library.
-   * @return The S3 key for the specified Lambda function library.
+   * @param domain The name of the Lambda function domain.
+   * @return The S3 key for the specified Lambda function domain.
    */
-  protected final def lambdaS3Key(library: String): Json =
-    join("", s"$library/${Application.toLowerCase}-$library-", ref(Version), ".jar")
+  protected final def lambdaS3Key(domain: String): Json =
+    join("", s"$domain/${Application.toLowerCase}-$domain-", ref(Version), ".jar")
 
   /** Returns the simple name of the specified class.
    *
@@ -105,15 +105,6 @@ trait Deployment:
    * @return The full name of the specified class.
    */
   protected final def fullName[T: ClassTag]: String = summon[ClassTag[T]].runtimeClass.getName
-
-  /**
-   * Generates the name of the IAM role with the specified prefix.
-   *
-   * @tparam T The type to return the name of the associated IAM role for.
-   * @return The name of the IAM role with the specified prefix.
-   */
-  protected final def iamRoleName[T: ClassTag]: String =
-    s"$Application${name[T]}IAMRole"
 
   /**
    * Generates the name of the SQS queue associated with the specified type.
@@ -230,7 +221,28 @@ trait Deployment:
   // Factories
 
   /**
-   * Generates an IAM role and Lambda function resource definition.
+   * Generates an SQS queue resource definition.
+   *
+   * @tparam T The type of event the queue manages.
+   * @param visibilityTimeout The default visibility timeout for events in the queue.
+   * @param tags              The tags to apply.
+   * @return An SQS queue resource definition.
+   */
+  private final def sqsQueue[T: ClassTag](visibilityTimeout: Json, tags: Tag*): Entries =
+    val queueName = sqsQueueName[T]
+    Entries(
+      queueName -> obj(
+        Type -> "AWS::SQS::Queue",
+        Properties -> obj(
+          QueueName -> queueName,
+          VisibilityTimeout -> visibilityTimeout,
+          tagging[T](tags *)
+        )
+      )
+    )
+
+  /**
+   * Generates a Lambda function resource definition.
    *
    * @tparam T The type of event the function handles.
    * @param description The description of the function.
@@ -241,7 +253,7 @@ trait Deployment:
    * @param timeout     The amount of time the function can run in seconds, defaults to 30.
    * @param environment The environment that the function executes in.
    * @param tags        The tags to apply.
-   * @return A Lambda function resource definitions.
+   * @return A Lambda function resource definition.
    */
   private final def lambdaFunction[T: ClassTag](
     description: String,
@@ -265,11 +277,13 @@ trait Deployment:
           Handler -> handler,
           MemorySize -> memorySize,
           Timeout -> timeout,
-          Role -> join("", "arn:aws:iam::", ref("AWS::AccountId"), s":role/${iamRoleName[T]}"),
+          Role -> join("",
+            "arn:aws:iam::",
+            ref("AWS::AccountId"),
+            ":role/LoremasterLambdaIAMRole"
+          ),
           Environment -> obj(Variables -> obj(environment.toSeq *)),
-          Tags -> arr((("Application" -> Application) +: ("Event" -> name[T]) +: tags).map {
-            case (key, value) => obj(Key -> fromString(key), Value -> fromString(value))
-          } *)
+          tagging[T](tags *)
         )
       )
     )
@@ -304,11 +318,23 @@ trait Deployment:
     )
 
   /**
+   * Returns the specified event and supplemental tags as a tag entry.
+   *
+   * @tparam T The type of event that is tagged.
+   * @param tags The supplemental tags.
+   * @return The specified event and supplemental tags as a tag entry.
+   */
+  private final def tagging[T: ClassTag](tags: Tag*): Entry =
+    Tags -> arr((("Application" -> Application) +: ("Event" -> name[T]) +: tags).map {
+      case (key, value) => obj(Key -> fromString(key), Value -> fromString(value))
+    } *)
+
+  /**
    * Generates a handler for SQS messages of type `T` with a Lambda function of type `F`.
    *
    * @tparam T The type of SQS messages to handle.
    * @tparam F The type of the function handler implementation.
-   * @param library                        The library that contains the function.
+   * @param domain                         The domain that contains the function.
    * @param description                    The description of the function.
    * @param memorySize                     The amount of memory available to the function in MB.
    * @param timeout                        The amount of time the function can run in seconds.
@@ -319,9 +345,9 @@ trait Deployment:
    * @param tags                           The tags to apply.
    * @return A handler for SQS messages of type `T` with a Lambda function of type `F`.
    */
-  protected final def handleSqsMessagesWithLambdaFunction[T: ClassTag, F: ClassTag](
+  protected final def sqsQueueDeliversToLambdaFunction[T: ClassTag, F: ClassTag](
     description: String,
-    library: String,
+    domain: String,
     memorySize: Json,
     timeout: Json,
     environment: Map[String, Json],
@@ -330,16 +356,23 @@ trait Deployment:
     maximumBatchingWindowInSeconds: Json,
     tags: Tag*
   ): Entries =
-    lambdaFunction[T](
+    sqsQueue[T](
+      timeout,
+      tags *
+    ) ++ lambdaFunction[T](
       description,
       lambdaS3Bucket,
-      lambdaS3Key(library),
+      lambdaS3Key(domain),
       fullName[F],
       memorySize,
       timeout,
       environment,
       tags *
-    ) ++ sqsToLambdaMapping[T](enabled, batchSize, maximumBatchingWindowInSeconds)
+    ) ++ sqsToLambdaMapping[T](
+      enabled,
+      batchSize,
+      maximumBatchingWindowInSeconds
+    )
 
   // Implementation
 

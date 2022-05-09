@@ -19,24 +19,24 @@ package deployment
  */
 private object Messages:
 
-  def description: String = s"The function that handles $Application Twitter events."
+  def description: String = s"The function that handles $Application $Twitter events."
 
-  def s3Bucket: String = s"The S3 bucket where the $Application Twitter code is stored."
+  def s3Bucket: String = s"The S3 bucket where the $Application $Twitter code is stored."
 
-  def s3Key: String = s"The S3 key where the $Application Twitter code is stored."
+  def s3Key: String = s"The S3 key where the $Application $Twitter code is stored."
 
-  def bearerToken: String = s"The $Application Twitter bearer token."
+  def bearerToken: String = s"The $Application $Twitter bearer token."
 
-  def memorySize: String = s"The amount of memory afforded to the $Application Twitter function in MB."
+  def memorySize: String = s"The amount of memory afforded to the $Application $$Twitter function in MB."
 
-  def timeout: String = s"The timeout applied to the $Application Twitter function in seconds."
+  def timeout: String = s"The timeout applied to the $Application $Twitter function in seconds."
 
-  def connectionTimeout: String = s"The $Application Twitter connection timeout."
+  def connectionTimeout: String = s"The $Application $Twitter connection timeout."
 
-  def retryPolicy: String = s"The $Application Twitter retry policy."
+  def retryPolicy: String = s"The $Application $Twitter retry policy."
 
-  def enabled: String = s"The $Application Twitter enablement state."
+  def enabled: String = s"The $Application $Twitter enablement state."
 
-  def batchSize: String = s"The $Application Twitter batch size."
+  def batchSize: String = s"The $Application $Twitter batch size."
 
-  def maxBatchingWindow: String = s"The $Application Twitter maximum batching window in seconds."
+  def maxBatchingWindow: String = s"The $Application $Twitter maximum batching window in seconds."

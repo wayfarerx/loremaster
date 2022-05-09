@@ -1,7 +1,7 @@
 import Dependencies._
 
 ThisBuild / organization := "net.wayfarerx"
-ThisBuild / version := "0.1.3"
+ThisBuild / version := "0.1.4"
 ThisBuild / scalaVersion := Scala3Version
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores")
 
@@ -60,9 +60,9 @@ def librarySettings(domain: String): Seq[Def.Setting[_]] =
  */
 def functionSettings(domain: String, proguardHeapSize: String = "2G"): Seq[Def.Setting[_]] = {
   commonSettings(domain) ++ Seq(
-    s3Bucket := "loremaster-lambda-functions",
+    s3Bucket := s"$Application-lambda-functions",
     s3Key := s"$domain/$Application-$domain-${version.value}.jar",
-    shipFunctions := (s3Prefix / publish).value,
+    shipFunctions := publish.value,
     shipStack := Def.unit(None)
   )
 }
