@@ -35,7 +35,7 @@ final class SqsPublisher[T: Encoder](queueUrl: String, sqsClient: AmazonSQS) ext
 
   /* Schedule an event for publishing. */
   override def apply(event: T, delay: Option[FiniteDuration]): Task[Unit] =
-    val request = SendMessageRequest(queueUrl, emitJson(event))
+    val request = SendMessageRequest(queueUrl, emit(event))
     Task {
       sqsClient sendMessage delay.filter(_ >= Duration.Zero).fold(request) { _delay =>
         request withDelaySeconds math.min(_delay.toSeconds, SqsPublisher.MaximumDelaySeconds).toInt

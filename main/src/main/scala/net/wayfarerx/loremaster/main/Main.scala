@@ -27,7 +27,7 @@ import zio.console
 object Main :
 
   def main(args: Array[String]): Unit =
-    println(emitJson(twitter.TwitterEvent(model.Book(cats.data.NonEmptyList.one("TESTING")), java.time.Instant.now)))
+    println(emit(twitter.TwitterEvent(model.Book(cats.data.NonEmptyList.one("TESTING")), java.time.Instant.now)))
     Runtime.default.unsafeRunTask {
       {
         args.toList match
@@ -38,7 +38,7 @@ object Main :
         Task {
           val deployment =
             new twitter.deployment.TwitterDeployment {}
-          output.append(emitJson(obj(
+          output.append(emit(obj(
             "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
             "Description" -> fromString(Messages.description),
             "Parameters" -> fromFields(deployment.parameters),

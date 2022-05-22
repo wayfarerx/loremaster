@@ -1,4 +1,4 @@
-/* src.scala
+/* Analysis.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,28 +11,29 @@
  */
 
 package net.wayfarerx.loremaster
-package model
+package analysis
+
+import zio.IO
+
+import model.*
 
 /**
- * Extensions to the StringContext type.
+ * Definition of the natural language analysis API.
  */
-extension (context: StringContext) {
+trait Analysis:
 
   /**
-   * Enables the `id` string constant prefix.
+   * Constructs lore from the specified book.
    *
-   * @param args The arguments passed to the string context.
-   * @return An ID derived from the string context and arguments.
+   * @param book The book to construct lore from.
+   * @return Lore constructed from the specified book.
    */
-  def id(args: Any*): ID = ID.decode(context.s(args *)).get
+  def analyze(book: Book): AnalysisEffect[Lore]
 
   /**
-   * Enables the `location` string constant prefix.
+   * Constructs a book from the specified lore.
    *
-   * @param args The arguments passed to the string context.
-   * @return A Location derived from the string context and arguments.
-   *
+   * @param lore The lore to construct a book from.
+   * @return A book constructed from the specified lore.
    */
-  def location(args: Any*): Location = Location.decode(context.s(args *)).get
-
-}
+  def render(lore: Lore): AnalysisEffect[Book]
