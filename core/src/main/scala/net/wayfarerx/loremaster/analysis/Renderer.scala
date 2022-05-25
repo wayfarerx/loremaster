@@ -1,4 +1,4 @@
-/* Analysis.scala
+/* Renderer.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -13,14 +13,12 @@
 package net.wayfarerx.loremaster
 package analysis
 
-import zio.IO
-
 import model.*
 
 /**
- * Definition of the natural language analysis API.
+ * Definition of the analysis renderer.
  */
-trait Analysis:
+trait Renderer:
 
   /**
    * Constructs lore from the specified book.

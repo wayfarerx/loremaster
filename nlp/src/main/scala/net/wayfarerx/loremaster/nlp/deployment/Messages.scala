@@ -1,4 +1,4 @@
-/* AnalysisProblem.scala
+/* Messages.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,14 +11,16 @@
  */
 
 package net.wayfarerx.loremaster
-package analysis
+package nlp
+package deployment
+
+import model.*
 
 /**
- * A problem raised by the analysis subsystem.
- *
- * @param message     The message that describes this problem.
- * @param causedBy    The throwable that caused this problem, defaults to none.
- * @param shouldRetry True if the operation should be retried, defaults to false.
+ * The messages provided by the NLP analysis engine.
  */
-final class AnalysisProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
-  extends Problem(message, causedBy, shouldRetry)
+private object Messages:
+
+  def failedToRenderSentence(sentence: Sentence): String =
+    s"Failed to render sentence: $sentence."
+

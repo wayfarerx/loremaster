@@ -1,4 +1,4 @@
-/* AnalysisProblem.scala
+/* NlpProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package analysis
+package nlp
 
 /**
  * A problem raised by the analysis subsystem.
@@ -20,5 +20,5 @@ package analysis
  * @param causedBy    The throwable that caused this problem, defaults to none.
  * @param shouldRetry True if the operation should be retried, defaults to false.
  */
-final class AnalysisProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
+final class NlpProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
   extends Problem(message, causedBy, shouldRetry)

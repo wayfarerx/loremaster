@@ -1,4 +1,4 @@
-/* AnalysisProblem.scala
+/* Renderer.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,14 +11,19 @@
  */
 
 package net.wayfarerx.loremaster
-package analysis
+package nlp
+
+import model.*
 
 /**
- * A problem raised by the analysis subsystem.
- *
- * @param message     The message that describes this problem.
- * @param causedBy    The throwable that caused this problem, defaults to none.
- * @param shouldRetry True if the operation should be retried, defaults to false.
+ * Definition of the NLP renderer.
  */
-final class AnalysisProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
-  extends Problem(message, causedBy, shouldRetry)
+trait Renderer:
+
+  /**
+   * Constructs a book from the specified lore.
+   *
+   * @param lore The lore to construct a book from.
+   * @return A book constructed from the specified lore.
+   */
+  def render(lore: Lore): NlpEffect[Book]

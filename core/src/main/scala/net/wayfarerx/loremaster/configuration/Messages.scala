@@ -14,7 +14,7 @@ package net.wayfarerx.loremaster
 package configuration
 
 /**
- * The messages provided by the loremaster configuraation.
+ * The messages provided by the loremaster configuration.
  */
 private object Messages:
 

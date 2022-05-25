@@ -16,9 +16,6 @@ import cats.data.NonEmptyList
 
 import io.circe.{Decoder, Encoder, parser, Error => JsonError}
 
-/** The name of the application. */
-val Application: String = "Loremaster"
-
 /** The given non empty list encoder. */
 given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]].contramap(_.toList)
 
@@ -26,6 +23,9 @@ given[T: Encoder]: Encoder[NonEmptyList[T]] = Encoder[List[T]].contramap(_.toLis
 given[T: Decoder]: Decoder[NonEmptyList[T]] = Decoder[List[T]] emap {
   NonEmptyList fromList _ toRight s"Unable to decode non-empty list from empty list."
 }
+
+/** The name of the application. */
+val Application: String = "Loremaster"
 
 /**
  * Emits a JSON value as a string.
