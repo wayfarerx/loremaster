@@ -92,9 +92,9 @@ object SqsFunctionTest:
     extends SqsFunction[TestMessage]
     with RequestHandler[SQSEvent, String] :
 
-    override type Environment = FunctionEnv
+    override type Environment = AwsEnv
 
-    override def environment: RLayer[FunctionEnv, Environment] = ZLayer.identity
+    override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
 
     override protected def onMessage(message: TestMessage): URIO[Environment, Unit] =
       validate(message, TestMessage.Valid)

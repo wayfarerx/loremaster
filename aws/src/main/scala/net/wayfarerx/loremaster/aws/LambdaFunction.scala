@@ -30,12 +30,12 @@ trait LambdaFunction[T] :
   /**
    * The type of environment to use.
    */
-  type Environment <: FunctionEnv
+  type Environment <: AwsEnv
 
   /**
    * The environment constructor to use.
    */
-  def environment: RLayer[FunctionEnv, Environment]
+  def environment: RLayer[AwsEnv, Environment]
 
   /**
    * Handles a Lambda request with the provided environment.
@@ -51,6 +51,6 @@ trait LambdaFunction[T] :
     Runtime.default unsafeRunTask {
       apply(request).provideLayer {
         ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(entry => UIO(logger.log(entry))))
-          >>> FunctionEnv >>> environment
+          >>> AwsEnv >>> environment
       }.map(_ => Messages.okay)
     }

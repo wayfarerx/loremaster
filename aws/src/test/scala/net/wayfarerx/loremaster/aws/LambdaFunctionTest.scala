@@ -76,9 +76,9 @@ object LambdaFunctionTest:
     extends LambdaFunction[TestRequest]
     with RequestHandler[TestRequest, String] :
 
-      override type Environment = FunctionEnv
+      override type Environment = AwsEnv
 
-      override def environment: RLayer[FunctionEnv, Environment] = ZLayer.identity
+      override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
 
       override def apply(request: TestRequest): RIO[Environment, Unit] =
         validate(request, TestRequest.Valid)

@@ -32,11 +32,11 @@ import logging.*
 final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
 
   /* The type of environment to use. */
-  override type Environment = FunctionEnv & Has[TwitterService]
+  override type Environment = AwsEnv & Has[TwitterService]
 
   /* The environment constructor to use. */
-  override def environment: RLayer[FunctionEnv, Environment] =
-    ZLayer.requires[FunctionEnv] ++ ZLayer.fromEffect {
+  override def environment: RLayer[AwsEnv, Environment] =
+    ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
         logFactory <- RIO.service[LogFactory]
         log <- logFactory.log[TwitterService]
