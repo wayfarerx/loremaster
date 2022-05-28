@@ -1,4 +1,4 @@
-/* Messages.scala
+/* NlpProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,12 +11,14 @@
  */
 
 package net.wayfarerx.loremaster
-package configuration
+package nlp
 
 /**
- * The messages provided by the loremaster configuration.
+ * A problem raised by the analysis subsystem.
+ *
+ * @param message     The message that describes this problem.
+ * @param causedBy    The throwable that caused this problem, defaults to none.
+ * @param shouldRetry True if the operation should be retried, defaults to false.
  */
-private object Messages:
-
-  def configurationNotFound(key: String, `type`: String): String =
-    s"""Could not find configuration "$key" of type "${`type`}""""
+final class NlpProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
+  extends Problem(message, causedBy, shouldRetry)

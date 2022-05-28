@@ -11,28 +11,9 @@
  */
 
 package net.wayfarerx.loremaster
-package model
+package analysis
 
-/**
- * Extensions to the StringContext type.
- */
-extension (context: StringContext) {
+import zio.IO
 
-  /**
-   * Enables the `id` string constant prefix.
-   *
-   * @param args The arguments passed to the string context.
-   * @return An ID derived from the string context and arguments.
-   */
-  def id(args: Any*): ID = ID.decode(context.s(args *)).get
-
-  /**
-   * Enables the `location` string constant prefix.
-   *
-   * @param args The arguments passed to the string context.
-   * @return A Location derived from the string context and arguments.
-   *
-   */
-  def location(args: Any*): Location = Location.decode(context.s(args *)).get
-
-}
+/** The effect type used by the analysis subsystem. */
+type AnalysisEffect[T] = IO[AnalysisProblem, T]

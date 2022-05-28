@@ -17,6 +17,9 @@ lazy val Core = "core"
 /** The "deployments" string". */
 lazy val Deployments = "deployments"
 
+/** The "nlp" string". */
+lazy val Nlp = "nlp"
+
 /** The "twitter" string". */
 lazy val Twitter = "twitter"
 
@@ -74,6 +77,7 @@ lazy val testSettings: Seq[Def.Setting[_]] = Seq(libraryDependencies ++= Seq(Sca
 lazy val loremaster = project.in(file(".")).aggregate(
   core,
   deployments,
+  nlp,
   twitter,
   main
 )
@@ -91,6 +95,13 @@ lazy val core = project.in(file(Core))
     ),
     testSettings
   )
+
+/** The Loremaster analysis project. */
+lazy val nlp = project.in(file(Nlp))
+  .settings(
+    librarySettings(Nlp),
+    libraryDependencies += OpenNlpTools
+  ).dependsOn(core)
 
 /** The Loremaster deployments project. */
 lazy val deployments = project.in(file(Deployments))

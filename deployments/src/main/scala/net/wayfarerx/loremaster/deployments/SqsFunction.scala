@@ -50,7 +50,7 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
     case head :: tail =>
       for
         _ <- Option(head.getBody).filterNot(_.isEmpty).fold(URIO.unit) { message =>
-          parseJson[T](message).fold(
+          parse[T](message).fold(
             log.error(Messages.failedToParseSqsMessage(message), _),
             onMessage(_).catchAll(log.error(Messages.failedToDeliverSqsMessage(message), _))
           )

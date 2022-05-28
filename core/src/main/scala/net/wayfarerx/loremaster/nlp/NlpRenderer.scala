@@ -1,4 +1,4 @@
-/* src.scala
+/* NlpRenderer.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,28 +11,19 @@
  */
 
 package net.wayfarerx.loremaster
-package model
+package nlp
+
+import model.*
 
 /**
- * Extensions to the StringContext type.
+ * Definition of the NLP renderer.
  */
-extension (context: StringContext) {
+trait NlpRenderer:
 
   /**
-   * Enables the `id` string constant prefix.
+   * Constructs a book from the specified lore.
    *
-   * @param args The arguments passed to the string context.
-   * @return An ID derived from the string context and arguments.
+   * @param lore The lore to construct a book from.
+   * @return A book constructed from the specified lore.
    */
-  def id(args: Any*): ID = ID.decode(context.s(args *)).get
-
-  /**
-   * Enables the `location` string constant prefix.
-   *
-   * @param args The arguments passed to the string context.
-   * @return A Location derived from the string context and arguments.
-   *
-   */
-  def location(args: Any*): Location = Location.decode(context.s(args *)).get
-
-}
+  def render(lore: Lore): NlpEffect[Book]

@@ -1,4 +1,4 @@
-/* src.scala
+/* Messages.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,28 +11,16 @@
  */
 
 package net.wayfarerx.loremaster
-package model
+package nlp
+package deployment
+
+import model.*
 
 /**
- * Extensions to the StringContext type.
+ * The messages provided by the NLP analysis engine.
  */
-extension (context: StringContext) {
+private object Messages:
 
-  /**
-   * Enables the `id` string constant prefix.
-   *
-   * @param args The arguments passed to the string context.
-   * @return An ID derived from the string context and arguments.
-   */
-  def id(args: Any*): ID = ID.decode(context.s(args *)).get
+  def failedToRenderSentence(sentence: Sentence): String =
+    s"Failed to render sentence: $sentence."
 
-  /**
-   * Enables the `location` string constant prefix.
-   *
-   * @param args The arguments passed to the string context.
-   * @return A Location derived from the string context and arguments.
-   *
-   */
-  def location(args: Any*): Location = Location.decode(context.s(args *)).get
-
-}

@@ -49,7 +49,7 @@ class SqsPublisherTest extends AnyFlatSpec with should.Matchers with MockitoSuga
 
   "SQS publishers" should "publish SQS events" in {
     val sqsClient = mock[AmazonSQS]
-    val sendMessageRequest = SendMessageRequest(queueUrl, emitJson(testEvent))
+    val sendMessageRequest = SendMessageRequest(queueUrl, emit(testEvent))
     when(sqsClient.sendMessage(sendMessageRequest)) thenReturn SendMessageResult()
     val publisher = SqsPublisher[TestEvent](queueUrl, sqsClient)
     Runtime.default.unsafeRunTask {
@@ -60,7 +60,7 @@ class SqsPublisherTest extends AnyFlatSpec with should.Matchers with MockitoSuga
 
   it.should("publish delayed SQS events") in {
     val sqsClient = mock[AmazonSQS]
-    val sendMessageRequest = SendMessageRequest(queueUrl, emitJson(testEvent)).withDelaySeconds(testDelay)
+    val sendMessageRequest = SendMessageRequest(queueUrl, emit(testEvent)).withDelaySeconds(testDelay)
     when(sqsClient.sendMessage(sendMessageRequest)) thenReturn SendMessageResult()
     val publisher = SqsPublisher[TestEvent](queueUrl, sqsClient)
     Runtime.default.unsafeRunTask {

@@ -50,7 +50,7 @@ class SqsFunctionTest extends AnyFlatSpec with should.Matchers with MockitoSugar
     when(context.getLogger) thenReturn logger
     val request = SQSEvent()
     val message = SQSEvent.SQSMessage()
-    message.setBody(emitJson(TestMessage.Valid))
+    message.setBody(emit(TestMessage.Valid))
     request.setRecords((message :: Nil).asJava)
     function.handleRequest(request, context) shouldBe Messages.okay
     messages shouldBe 1

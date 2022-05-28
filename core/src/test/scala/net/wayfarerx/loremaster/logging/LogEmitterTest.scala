@@ -44,14 +44,14 @@ class LogEmitterTest extends AnyFlatSpec with should.Matchers :
     Runtime.default.unsafeRunTask(effect) shouldBe()
     emitted shouldBe Vector(
       "TRACE trace.",
-      "TRACE trace, caused by java.lang.RuntimeException.",
+      "TRACE trace, caused by RuntimeException.",
       "DEBUG debug.",
-      "DEBUG debug, caused by java.lang.RuntimeException(msg).",
+      "DEBUG debug, caused by RuntimeException(msg).",
       "INFO  info.",
-      "INFO  info, caused by java.lang.RuntimeException.",
+      "INFO  info, caused by RuntimeException.",
       "WARN  warn.",
-      "WARN  warn, caused by java.lang.RuntimeException(msg).",
+      "WARN  warn, caused by RuntimeException(msg).",
       "ERROR error!",
-      "ERROR error, caused by java.lang.RuntimeException!"
+      "ERROR error, caused by RuntimeException!"
     )
   }
