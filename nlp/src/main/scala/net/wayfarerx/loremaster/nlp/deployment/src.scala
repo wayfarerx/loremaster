@@ -19,8 +19,11 @@ import java.net.URI
 
 import zio.{IO, Task, TaskManaged, UIO, ZManaged}
 
-/** A string containing a single space character. */
-val Space = " "
+/** The "Nlp" prefix. */
+private inline def Nlp = "Nlp"
+
+/** The NLP detokenizer dictionary variable name. */
+val NlpDetokenizerDictionary = s"${Nlp}DetokenizerDictionary"
 
 /** The name of the latin detokenizer XML resource. */
 val DefaultDetokenizerDictionary = "opennlp/latin-detokenizer.xml"
@@ -32,12 +35,13 @@ val DefaultDetokenizerDictionary = "opennlp/latin-detokenizer.xml"
  * @param fallbackResource The fallback classpath resource.
  * @return Data from the specified URI or the fallback classpath resource.
  */
-private def load(uri: Option[URI], fallbackResource: String): TaskManaged[InputStream] = ZManaged.fromAutoCloseable {
-  for
-    specified <- uri.fold(Task.none)(Task some _.toURL)
-    selected <- specified.fold(Task(Option(getClass.getClassLoader.getResource(fallbackResource))))(Task.some)
-    result <- selected.fold {
-      Task.fail(FileNotFoundException(uri.fold(fallbackResource)(_.toString)))
-    }(Task apply _.openStream)
-  yield result
-}
+private def loadData(uri: Option[URI], fallbackResource: String): TaskManaged[InputStream] =
+  ZManaged.fromAutoCloseable {
+    for
+      specified <- uri.fold(Task.none)(url => Task(Some(url.toURL)))
+      selected <- specified.fold(Task(Option(getClass.getClassLoader.getResource(fallbackResource))))(Task.some)
+      result <- selected.fold {
+        Task.fail(FileNotFoundException(uri.fold(fallbackResource)(_.toString)))
+      }(Task apply _.openStream)
+    yield result
+  }

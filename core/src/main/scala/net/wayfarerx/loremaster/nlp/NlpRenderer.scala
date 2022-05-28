@@ -1,4 +1,4 @@
-/* Renderer.scala
+/* NlpRenderer.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -18,7 +18,7 @@ import model.*
 /**
  * Definition of the NLP renderer.
  */
-trait Renderer:
+trait NlpRenderer:
 
   /**
    * Constructs a book from the specified lore.

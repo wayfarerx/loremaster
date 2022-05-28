@@ -18,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import deployments.*
 
-/** The Twitter string. */
+/** The "Twitter" prefix. */
 private inline def Twitter = "Twitter"
 
 /** The Twitter memory size variable name. */

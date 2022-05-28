@@ -96,6 +96,13 @@ lazy val core = project.in(file(Core))
     testSettings
   )
 
+/** The Loremaster analysis project. */
+lazy val nlp = project.in(file(Nlp))
+  .settings(
+    librarySettings(Nlp),
+    libraryDependencies += OpenNlpTools
+  ).dependsOn(core)
+
 /** The Loremaster deployments project. */
 lazy val deployments = project.in(file(Deployments))
   .settings(
@@ -106,13 +113,6 @@ lazy val deployments = project.in(file(Deployments))
       AwsSqs
     ),
     testSettings
-  ).dependsOn(core)
-
-/** The Loremaster analysis project. */
-lazy val nlp = project.in(file(Nlp))
-  .settings(
-    librarySettings(Nlp),
-    libraryDependencies += OpenNlpTools
   ).dependsOn(core)
 
 /** The Loremaster Twitter project. */
