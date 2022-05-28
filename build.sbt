@@ -14,8 +14,8 @@ lazy val Package = s"net.wayfarerx.$Application"
 /** The "core" string". */
 lazy val Core = "core"
 
-/** The "deployments" string". */
-lazy val Deployments = "deployments"
+/** The "aws" string". */
+lazy val Aws = "aws"
 
 /** The "nlp" string". */
 lazy val Nlp = "nlp"
@@ -76,8 +76,8 @@ lazy val testSettings: Seq[Def.Setting[_]] = Seq(libraryDependencies ++= Seq(Sca
 /** The Loremaster project. */
 lazy val loremaster = project.in(file(".")).aggregate(
   core,
-  deployments,
   nlp,
+  aws,
   twitter,
   main
 )
@@ -103,10 +103,10 @@ lazy val nlp = project.in(file(Nlp))
     libraryDependencies += OpenNlpTools
   ).dependsOn(core)
 
-/** The Loremaster deployments project. */
-lazy val deployments = project.in(file(Deployments))
+/** The Loremaster AWS project. */
+lazy val aws = project.in(file(Aws))
   .settings(
-    librarySettings(Deployments),
+    librarySettings(Aws),
     libraryDependencies ++= Seq(
       AwsLambdaCore,
       AwsLambdaEvents,
@@ -121,7 +121,7 @@ lazy val twitter = project.in(file(Twitter))
   .settings(
     functionSettings(Twitter),
     libraryDependencies += Twitter4JCore
-  ).dependsOn(core, deployments)
+  ).dependsOn(core, aws)
 
 /** The Loremaster main project. */
 lazy val main = project.in(file(Main))

@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import zio.{Has, IO, RLayer, ZEnv, ZLayer}
 import zio.system.System
@@ -19,11 +19,11 @@ import zio.system.System
 import configuration.*
 import logging.*
 
-/** The type of environment that AWS effects operate in. */
-type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
+/** The type of environment that functions operate in. */
+type FunctionEnv = ZEnv & Has[Configuration] & Has[LogFactory]
 
-/** Factory for AWS environments. */
-def AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
+/** Factory for function environments. */
+def FunctionEnv: RLayer[ZEnv & Has[LogEmitter], FunctionEnv] =
   val config = ZLayer.fromService { (sys: System.Service) =>
     Configuration { key =>
       sys.env(key) catchAll { thrown =>

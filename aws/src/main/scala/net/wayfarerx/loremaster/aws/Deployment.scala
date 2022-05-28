@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import scala.collection.immutable.ListMap
 import scala.concurrent.duration.*
@@ -214,9 +214,9 @@ trait Deployment:
    * @return A string parameter definition.
    */
   protected final def parameter[T: Parameter](name: String, description: String, default: Option[T] = None): Entry =
-    val parameter = Parameter[T]
-    val basic = ListMap(Type -> Json.fromString(parameter._type), Description -> Json.fromString(description))
-    name -> obj(default.map(parameter).fold(basic)(_default => basic + (Default -> Json.fromString(_default))).toSeq *)
+    val _parameter = Parameter[T]
+    val basic = ListMap(Type -> Json.fromString(_parameter._type), Description -> Json.fromString(description))
+    name -> obj(default.map(_parameter).fold(basic)(_default => basic + (Default -> Json.fromString(_default))).toSeq *)
 
   // Factories
 

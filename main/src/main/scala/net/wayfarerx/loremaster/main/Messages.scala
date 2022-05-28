@@ -22,7 +22,7 @@ private object Messages {
   def description: String = s"The $Application deployment stack."
 
   /** The usage of this application. */
-  def usage: String = s"Usage: $Application <cloudformation.json>"
+  def usage: String = s"Usage: $Application [cloudformation.json]"
 
   /**
    * The message that describes a failure to write an AWS CloudFormation template.

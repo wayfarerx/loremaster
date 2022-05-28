@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import scala.concurrent.duration.*
 

@@ -11,13 +11,16 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
+
 import zio.{RIO, RLayer, Task, ZLayer}
+
 import org.scalatest.*
 import flatspec.*
 import matchers.*
+
 import org.mockito.Mockito.*
 import org.mockito.ArgumentMatchers.*
 import org.scalatestplus.mockito.MockitoSugar
@@ -73,9 +76,9 @@ object LambdaFunctionTest:
     extends LambdaFunction[TestRequest]
     with RequestHandler[TestRequest, String] :
 
-      override type Environment = AwsEnv
+      override type Environment = FunctionEnv
 
-      override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
+      override def environment: RLayer[FunctionEnv, Environment] = ZLayer.identity
 
       override def apply(request: TestRequest): RIO[Environment, Unit] =
         validate(request, TestRequest.Valid)

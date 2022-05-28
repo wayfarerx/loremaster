@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 
@@ -30,12 +30,12 @@ trait LambdaFunction[T] :
   /**
    * The type of environment to use.
    */
-  type Environment <: AwsEnv
+  type Environment <: FunctionEnv
 
   /**
    * The environment constructor to use.
    */
-  def environment: RLayer[AwsEnv, Environment]
+  def environment: RLayer[FunctionEnv, Environment]
 
   /**
    * Handles a Lambda request with the provided environment.
@@ -51,6 +51,6 @@ trait LambdaFunction[T] :
     Runtime.default unsafeRunTask {
       apply(request).provideLayer {
         ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(entry => UIO(logger.log(entry))))
-          >>> AwsEnv >>> environment
+          >>> FunctionEnv >>> environment
       }.map(_ => Messages.okay)
     }

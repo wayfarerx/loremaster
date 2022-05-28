@@ -61,7 +61,7 @@ final class OpenNlpRenderer(detokenizer: Detokenizer) extends NlpRenderer :
     }.toArray, " ")
   } catchAll {
     case NonFatal(thrown) => IO.fail(NlpProblem(Messages.failedToRenderSentence(sentence), Some(thrown)))
-    case fatal => IO.die(fatal)
+    case thrown => IO.die(thrown)
   }
 
 /**

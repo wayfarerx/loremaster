@@ -16,7 +16,7 @@ package deployment
 
 import scala.concurrent.duration.FiniteDuration
 
-import deployments.*
+import aws.*
 
 /** The "Twitter" prefix. */
 private inline def Twitter = "Twitter"

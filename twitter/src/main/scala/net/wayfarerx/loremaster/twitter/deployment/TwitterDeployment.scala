@@ -19,7 +19,7 @@ import scala.language.implicitConversions
 
 import io.circe.Json
 
-import deployments.*
+import aws.*
 import event.*
 
 /**
