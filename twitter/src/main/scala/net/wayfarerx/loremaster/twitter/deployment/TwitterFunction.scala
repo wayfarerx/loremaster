@@ -21,8 +21,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import zio.{Has, RIO, RLayer, ZLayer}
 
+import aws.*
 import configuration.*
-import deployments.*
 import event.*
 import logging.*
 

@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 

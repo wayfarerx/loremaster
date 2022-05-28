@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import scala.jdk.CollectionConverters.*
 
@@ -26,6 +26,7 @@ import zio.{RIO, RLayer, Task, UIO, URIO, ZLayer}
 import org.scalatest.*
 import org.scalatest.flatspec.*
 import org.scalatest.matchers.*
+
 import org.mockito.ArgumentMatchers.*
 import org.mockito.Mockito.*
 import org.scalatestplus.mockito.MockitoSugar

@@ -11,13 +11,16 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
+
 import zio.{RIO, RLayer, Task, ZLayer}
+
 import org.scalatest.*
 import flatspec.*
 import matchers.*
+
 import org.mockito.Mockito.*
 import org.mockito.ArgumentMatchers.*
 import org.scalatestplus.mockito.MockitoSugar

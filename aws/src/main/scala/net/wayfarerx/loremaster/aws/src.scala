@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package deployments
+package aws
 
 import zio.{Has, IO, RLayer, ZEnv, ZLayer}
 import zio.system.System
@@ -19,7 +19,7 @@ import zio.system.System
 import configuration.*
 import logging.*
 
-/** The type of environment that AWS effects operate in. */
+/** The type of the AWS environment. */
 type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
 
 /** Factory for AWS environments. */
