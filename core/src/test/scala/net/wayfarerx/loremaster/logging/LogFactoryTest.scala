@@ -27,10 +27,12 @@ import matchers.*
 class LogFactoryTest extends AnyFlatSpec with should.Matchers :
 
   "A log factory" should "create configured log services" in {
-    val config = Configuration {
-      case "LogFactoryTest.log.level" => UIO.some(Log.Level.Debug.toString)
-      case _ => UIO.none
-    }
+    val config = new Configuration : // FIXME Should be a mock.
+      override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = {
+        key match
+          case "LogFactoryTest.log.level" => UIO.some(Log.Level.Debug.toString)
+          case _ => UIO.none
+      } map (_ flatMap Configuration.Data[T])
     var emitted = Vector.empty[(Log.Level, String, Option[Throwable])]
     val logs = LogFactory(config, (level, message, thrown) => UIO(emitted :+= (level, message, thrown)))
     val effect = for

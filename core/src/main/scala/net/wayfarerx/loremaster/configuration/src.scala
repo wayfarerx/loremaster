@@ -1,4 +1,4 @@
-/* ConfigurationProblem.scala
+/* src.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -13,13 +13,7 @@
 package net.wayfarerx.loremaster
 package configuration
 
-import scala.util.control.NoStackTrace
+import zio.IO
 
-/**
- * A problem raised by the configuration subsystem.
- *
- * @param message  The message that describes this problem.
- * @param causedBy The throwable that caused this problem, defaults to none.
- */
-final class ConfigurationProblem(message: String, causedBy: Option[Throwable] = None)
-  extends Problem(message, causedBy)
+/** The effect type used by the configuration subsystem. */
+type ConfigurationEffect[T] = IO[ConfigurationProblem, T]
