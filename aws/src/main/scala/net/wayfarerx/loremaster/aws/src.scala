@@ -24,12 +24,13 @@ type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
 
 /** Factory for AWS environments. */
 def AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
-  val config = ZLayer.fromService { (sys: System.Service) =>
-    Configuration { key =>
-      sys.env(key) catchAll { thrown =>
-        IO.fail(ConfigurationProblem(Messages.failedToAccessConfiguration(key, thrown), Some(thrown)))
-      }
-    }
+  val config = ZLayer.fromService[System.Service, Configuration] { sys =>
+    new Configuration:
+      override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = for
+        value <- sys.env(key) catchAll { thrown =>
+          IO.fail(ConfigurationProblem(Messages.failedToAccessConfiguration(key, thrown), Some(thrown)))
+        }
+      yield value flatMap Configuration.Data[T]
   }
   val logFactory = config ++ ZLayer.requires[Has[LogEmitter]] >>> ZLayer.fromServices(LogFactory(_, _))
   ZLayer.requires[ZEnv] ++ config ++ logFactory

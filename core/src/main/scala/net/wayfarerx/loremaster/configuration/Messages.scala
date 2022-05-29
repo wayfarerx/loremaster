@@ -18,5 +18,6 @@ package configuration
  */
 private object Messages:
 
+  /** The message that describes when a configuration value is not found. */
   def configurationNotFound(key: String, `type`: String): String =
-    s"""Could not find configuration "$key" of type "${`type`}""""
+    s"""Could not find configuration "$key" of type "${`type`}.""""
