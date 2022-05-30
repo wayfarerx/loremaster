@@ -20,17 +20,21 @@ private object Messages {
 
   def okay: String = "200 OK"
 
-  def accountId: String = s"The ID of the AWS account $Application operates in."
-
   def version: String = s"The version of $Application to use."
 
-  def failedToAccessConfiguration(key: String, thrown: Throwable): String =
-    s"""Failed to access configuration "$key": ${describe(thrown)}"""
+  def unableToAccessConfigurationData(key: String): String =
+    s"""Unable to access configuration data for "$key" in the environment."""
+
+  def invalidConfigurationData(key: String, `type`: String): String =
+    s"""Invalid configuration data for "$key:${`type`}" found in the environment."""
+
+  def invalidLoggingConfiguration(name: String): String =
+    s"""Invalid logging configuration for "$name" found in the environment."""
 
   def failedToDeliverSqsMessage(message: String): String =
-    s"Failed to deliver SQS message: $message"
+    s"Failed to deliver SQS message: $message."
 
   def failedToParseSqsMessage(message: String): String =
-    s"Failed to parse SQS message: $message"
+    s"Failed to parse SQS message: $message."
 
 }

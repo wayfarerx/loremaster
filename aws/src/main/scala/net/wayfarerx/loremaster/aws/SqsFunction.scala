@@ -34,11 +34,8 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
   self: RequestHandler[SQSEvent, String] =>
 
   /* Process a SQS event. */
-  final override def apply(event: SQSEvent): RIO[Environment, Unit] = for
-    logFactory <- RIO.service[LogFactory]
-    log <- logFactory(getClass)
-    _ <- onMessages(log, event.getRecords.asScala.toList)
-  yield ()
+  final override def apply(log: Log, event: SQSEvent): RIO[Environment, Unit] =
+    onMessages(log, event.getRecords.asScala.toList)
 
   /**
    * Handles messages from the SQS queue.

@@ -48,8 +48,8 @@ def parse[T: Decoder](json: String): Either[JsonError, T] = parser.decode[T](jso
 /**
  * Describes a throwable.
  *
- * @param thrown The throwable to describe.
+ * @param throwable The throwable to describe.
  * @return The description of the throwable.
  */
-def describe(thrown: Throwable): String =
-  s"${thrown.getClass.getSimpleName}${Option(thrown.getMessage).filterNot(_.isEmpty).fold("")(msg => s"($msg)")}"
+def describe(throwable: Throwable): String =
+  s"${throwable.getClass.getSimpleName}${Option(throwable.getMessage).filterNot(_.isEmpty).fold("")(msg => s"($msg)")}"

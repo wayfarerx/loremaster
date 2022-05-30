@@ -13,6 +13,8 @@
 package net.wayfarerx.loremaster
 package aws
 
+import com.amazonaws.services.lambda.runtime.Context
+
 import zio.{Has, IO, RLayer, ZEnv, ZLayer}
 import zio.system.System
 
@@ -20,20 +22,13 @@ import configuration.*
 import logging.*
 
 /** The type of the AWS environment. */
-type AwsEnv = ZEnv & Has[Configuration] & Has[LogFactory]
+type AwsEnv = ZEnv & Has[Configuration] & Has[Logging]
 
 /** Factory for AWS environments. */
-def AwsEnv: RLayer[ZEnv & Has[LogEmitter], AwsEnv] =
-  val config = ZLayer.fromService[System.Service, Configuration] { sys =>
-    new Configuration:
-      override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = for
-        value <- sys.env(key) catchAll { thrown =>
-          IO.fail(ConfigurationProblem(Messages.failedToAccessConfiguration(key, thrown), Some(thrown)))
-        }
-      yield value flatMap Configuration.Data[T]
-  }
-  val logFactory = config ++ ZLayer.requires[Has[LogEmitter]] >>> ZLayer.fromServices(LogFactory(_, _))
-  ZLayer.requires[ZEnv] ++ config ++ logFactory
+def AwsEnv(context: Context): RLayer[ZEnv, AwsEnv] =
+  val config: RLayer[ZEnv, Has[Configuration]] = ZLayer.fromService(AwsConfiguration(_))
+  val logs: RLayer[ZEnv, Has[Logging]] = config >>> ZLayer.fromService(AwsLogging(_, context.getLogger))
+  ZLayer.requires[ZEnv] ++ config ++ logs
 
 /** The "2012-10-17" string. */
 inline def _2012_10_17 = "2012-10-17"
