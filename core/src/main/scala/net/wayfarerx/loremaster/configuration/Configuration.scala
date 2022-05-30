@@ -40,7 +40,7 @@ trait Configuration:
   }
 
   /**
-   * Returns the value of the specified configuration entry if it exists.
+   *
    *
    * @tparam T The type of value to return if it exists.
    * @param key The key of the configuration entry to return.
@@ -63,6 +63,10 @@ trait Configuration:
  * Definitions associated with configurations.
  */
 object Configuration:
+
+  /** A configuration that has no data. */
+  val Empty: Configuration = new Configuration :
+    override def get[T: Data](key: String) = UIO.none
 
   /**
    * Support for a specific type of configuration data.

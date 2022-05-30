@@ -24,7 +24,7 @@ import logging.*
  *
  * @tparam T The type of request this Lambda function produces.
  */
-trait LambdaFunction[T] :
+trait LambdaFunction[T]:
   self: RequestHandler[T, String] =>
 
   /**
@@ -40,17 +40,18 @@ trait LambdaFunction[T] :
   /**
    * Handles a Lambda request with the provided environment.
    *
+   * @param log     The log to use.
    * @param request The request to handle.
    * @return The environment-dependant request handler.
    */
-  def apply(request: T): RIO[Environment, Unit]
+  def apply(log: Log, request: T): RIO[Environment, Unit]
 
   /* Handle a Lambda request. */
   final override def handleRequest(request: T, context: Context): String =
-    val logger = context.getLogger
     Runtime.default unsafeRunTask {
-      apply(request).provideLayer {
-        ZLayer.requires[ZEnv] ++ ZLayer.succeed(LogEmitter.formatted(entry => UIO(logger.log(entry))))
-          >>> AwsEnv >>> environment
-      }.map(_ => Messages.okay)
-    }
+      for
+        logging <- RIO.service[Logging]
+        log <- logging(getClass)
+        _ <- apply(log, request)
+      yield Messages.okay
+    }.provideLayer(AwsEnv(context) >>> environment)

@@ -38,9 +38,9 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandle
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
-        logFactory <- RIO.service[LogFactory]
-        log <- logFactory.log[TwitterService]
         config <- RIO.service[Configuration]
+        logging <- RIO.service[Logging]
+        log <- logging.log[TwitterService]
         retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
         consumerKey <- config[String](TwitterConsumerKey)
         consumerSecret <- config[String](TwitterConsumerSecret)

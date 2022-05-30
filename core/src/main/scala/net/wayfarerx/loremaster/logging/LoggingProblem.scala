@@ -1,4 +1,4 @@
-/* Messages.scala
+/* LoggingProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -14,14 +14,10 @@ package net.wayfarerx.loremaster
 package logging
 
 /**
- * The messages provided by the loremaster model.
+ * A problem raised by the logging subsystem.
+ *
+ * @param message  The message that describes this problem.
+ * @param causedBy The throwable that caused this problem, defaults to none.
  */
-private object Messages:
-
-  val Space = " "
-
-  val Exclamation = "!"
-
-  val Period = "."
-
-  def causedBy(thrown: Throwable): String = s", caused by ${describe(thrown)}"
+final class LoggingProblem(message: String, causedBy: Option[Throwable] = None)
+  extends Problem(message, causedBy)
