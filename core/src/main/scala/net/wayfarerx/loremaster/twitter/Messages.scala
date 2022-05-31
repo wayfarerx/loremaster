@@ -24,4 +24,6 @@ private object Messages:
 
   def retryingTweet(event: TwitterEvent, backoff: FiniteDuration) = s"Retrying tweet after $backoff: ${format(event)}"
 
+  def failedToRetryTweet(event: TwitterEvent) = s"Failed to retry tweet: ${format(event)}"
+
   private[this] def format(event: TwitterEvent): String = event.book.paragraphs.iterator mkString " "

@@ -28,15 +28,15 @@ class TwitterProblemTest extends AnyFlatSpec with should.Matchers :
   "TwitterProblem" should "provide a variety of constructors" in {
     val msgProblem = TwitterProblem(msg)
     msgProblem.message shouldBe msg
-    msgProblem.cause shouldBe None
+    msgProblem.causedBy shouldBe None
     msgProblem.shouldRetry shouldBe false
     val thrown = RuntimeException(msg)
     val causeProblem = TwitterProblem(msg, Some(thrown))
     causeProblem.message shouldBe msg
-    causeProblem.cause shouldBe Some(thrown)
+    causeProblem.causedBy shouldBe Some(thrown)
     causeProblem.shouldRetry shouldBe false
     val retryProblem = TwitterProblem(msg, shouldRetry = true)
     retryProblem.message shouldBe msg
-    retryProblem.cause shouldBe None
+    retryProblem.causedBy shouldBe None
     retryProblem.shouldRetry shouldBe true
   }

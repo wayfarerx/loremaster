@@ -14,7 +14,7 @@ package net.wayfarerx.loremaster
 package nlp
 
 /**
- * A problem raised by the analysis subsystem.
+ * A problem raised by the NLP subsystem.
  *
  * @param message     The message that describes this problem.
  * @param causedBy    The throwable that caused this problem, defaults to none.

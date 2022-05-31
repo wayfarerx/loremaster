@@ -54,14 +54,14 @@ final class OpenNlpRenderer(detokenizer: Detokenizer) extends NlpRenderer :
   yield result
 
   /* Render a single paragraph. */
-  private def renderSentence(sentence: Sentence): NlpEffect[String] = IO {
+  private def renderSentence(sentence: Sentence): NlpEffect[String] = Task {
     detokenizer.detokenize(sentence.tokens.iterator.map {
       case Token.Text(text, _) => text
       case Token.Name(name, _) => name
     }.toArray, " ")
   } catchAll {
-    case NonFatal(thrown) => IO.fail(NlpProblem(Messages.failedToRenderSentence(sentence), Some(thrown)))
-    case thrown => IO.die(thrown)
+    case NonFatal(nonFatal) => IO.fail(NlpProblem(Messages.failedToRenderSentence(sentence), Some(nonFatal)))
+    case fatal => IO.die(fatal)
   }
 
 /**
@@ -70,13 +70,12 @@ final class OpenNlpRenderer(detokenizer: Detokenizer) extends NlpRenderer :
 object OpenNlpRenderer extends (Detokenizer => OpenNlpRenderer) :
 
   /**
-   * Returns a new OpenNLP renderer.
+   * Creates an OpenNLP renderer.
    *
    * @param detokenizer The OpenNLP detokenizer to use.
    * @return A new OpenNLP renderer.
    */
   override def apply(detokenizer: Detokenizer): OpenNlpRenderer = new OpenNlpRenderer(detokenizer)
-
 
   /**
    * Configures a new OpenNLP renderer.

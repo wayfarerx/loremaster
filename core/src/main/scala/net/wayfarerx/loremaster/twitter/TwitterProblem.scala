@@ -16,20 +16,11 @@ package twitter
 import scala.util.control.NoStackTrace
 
 /**
- * A problem raised by Twitter.
+ * A problem raised by the Twitter subsystem.
  *
- * @param _message    The message that describes the problem.
- * @param cause       The throwable that caused this problem, defaults to none.
+ * @param message    The message that describes the problem.
+ * @param causedBy       The throwable that caused this problem, defaults to none.
  * @param shouldRetry True if the operation should be retried, defaults to false.
  */
-final class TwitterProblem(
-  _message: String,
-  val cause: Option[Throwable] = None,
-  val shouldRetry: Boolean = false
-) extends RuntimeException(_message) with NoStackTrace :
-
-  /** The message that describes this problem. */
-  def message: String = getMessage
-
-  /* Return the cause of this Twitter problem. */
-  override def getCause: Throwable = cause getOrElse super.getCause
+final class TwitterProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
+  extends Problem(message, causedBy, shouldRetry)

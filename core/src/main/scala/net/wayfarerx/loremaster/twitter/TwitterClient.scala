@@ -34,4 +34,4 @@ trait TwitterClient:
    * @param book The book to post to Twitter.
    * @return The result of posting a book to Twitter.
    */
-  def postTweet(book: Book): IO[TwitterProblem, Unit]
+  def postTweet(book: Book): TwitterEffect[Unit]

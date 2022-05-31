@@ -20,8 +20,9 @@ import scala.util.control.NonFatal
 import twitter4j.{Twitter, TwitterException, TwitterFactory}
 import twitter4j.conf.ConfigurationBuilder
 
-import zio.IO
+import zio.{IO, Task}
 
+import configuration.*
 import model.*
 
 
@@ -33,7 +34,9 @@ import model.*
 final class TwitterConnection(connection: Twitter) extends TwitterClient :
 
   /* Post a book to Twitter. */
-  override def postTweet(book: Book): IO[TwitterProblem, Unit] = IO(connection.updateStatus(book.toString)) catchAll {
+  override def postTweet(book: Book): IO[TwitterProblem, Unit] = Task {
+    connection.updateStatus(book.toString)
+  } catchAll {
     case thrown: TwitterException => IO.fail(
       TwitterProblem(
         Messages.twitterFailure(thrown.getMessage),
@@ -41,10 +44,8 @@ final class TwitterConnection(connection: Twitter) extends TwitterClient :
         thrown.getStatusCode == 429 || thrown.getStatusCode >= 500
       )
     )
-    case NonFatal(nonFatal) =>
-      IO.fail(TwitterProblem(Messages.twitterError(nonFatal.getMessage), Some(nonFatal)))
-    case fatal =>
-      IO.die(fatal)
+    case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.twitterError(nonFatal.getMessage), Some(nonFatal)))
+    case fatal => IO.die(fatal)
   } map (_ => ())
 
 /**
@@ -58,33 +59,31 @@ object TwitterConnection extends (Twitter => TwitterConnection) :
    * @param connection The connection to wrap.
    * @return A new Twitter connection.
    */
-  override def apply(connection: Twitter): TwitterConnection =
-    new TwitterConnection(connection)
+  override def apply(connection: Twitter): TwitterConnection = new TwitterConnection(connection)
 
   /**
-   * Creates a Twitter connection.
+   * Configures a new Twitter connection.
    *
-   * @param consumerKey       The consumer key to use.
-   * @param consumerSecret    The consumer secret to use.
-   * @param accessToken       The access token to use.
-   * @param accessTokenSecret The access token secret to use.
-   * @param connectionTimeout The connection timeout to enforce.
+   * @param config The configuration to use.
    * @return A new Twitter connection.
    */
-  def apply(
-    consumerKey: String,
-    consumerSecret: String,
-    accessToken: String,
-    accessTokenSecret: String,
-    connectionTimeout: FiniteDuration
-  ): TwitterConnection = apply(
-    TwitterFactory(
-      ConfigurationBuilder()
-        .setOAuthConsumerKey(consumerKey)
-        .setOAuthConsumerSecret(consumerSecret)
-        .setOAuthAccessToken(accessToken)
-        .setOAuthAccessTokenSecret(accessTokenSecret)
-        .setHttpConnectionTimeout(connectionTimeout.toMillis.toInt)
-        .build
-    ).getInstance
-  )
+  def configure(config: Configuration): Task[TwitterConnection] = for
+    consumerKey <- config[String](TwitterConsumerKey)
+    consumerSecret <- config[String](TwitterConsumerSecret)
+    accessToken <- config[String](TwitterAccessToken)
+    accessTokenSecret <- config[String](TwitterAccessTokenSecret)
+    connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
+    result <- Task {
+      apply(
+        TwitterFactory(
+          ConfigurationBuilder()
+            .setOAuthConsumerKey(consumerKey)
+            .setOAuthConsumerSecret(consumerSecret)
+            .setOAuthAccessToken(accessToken)
+            .setOAuthAccessTokenSecret(accessTokenSecret)
+            .setHttpConnectionTimeout(connectionTimeout.toMillis.toInt)
+            .build
+        ).getInstance
+      )
+    }
+  yield result
