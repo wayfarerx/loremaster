@@ -65,7 +65,7 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
   }
 
   it.should("propagate fatal problems when posting tweets") in {
-    val retryPolicy = RetryPolicy(termination = RetryPolicy.Termination.LimitRetries(0))
+    val retryPolicy = RetryPolicy(termination = RetryPolicy.Termination.LimitAttempts(0))
     val client = mock[TwitterClient]
     val publisher = mock[Publisher[TwitterEvent]]
     val problem = TwitterProblem("PROBLEM", Some(RuntimeException()))

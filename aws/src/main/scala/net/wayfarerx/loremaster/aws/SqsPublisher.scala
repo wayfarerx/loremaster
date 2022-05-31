@@ -14,13 +14,14 @@ package net.wayfarerx.loremaster
 package aws
 
 import scala.concurrent.duration.*
+import scala.util.control.NonFatal
 
 import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
 import com.amazonaws.services.sqs.model.SendMessageRequest
 
 import io.circe.Encoder
 
-import zio.Task
+import zio.{IO, UIO}
 
 import event.*
 
@@ -34,13 +35,18 @@ import event.*
 final class SqsPublisher[T: Encoder](queueUrl: String, sqsClient: AmazonSQS) extends Publisher[T] :
 
   /* Schedule an event for publishing. */
-  override def apply(event: T, delay: Option[FiniteDuration]): Task[Unit] =
+  override def apply(event: T, delay: Option[FiniteDuration]): EventEffect[Unit] =
     val request = SendMessageRequest(queueUrl, emit(event))
-    Task {
+    IO {
       sqsClient sendMessage delay.filter(_ >= Duration.Zero).fold(request) { _delay =>
         request withDelaySeconds math.min(_delay.toSeconds, SqsPublisher.MaximumDelaySeconds).toInt
       }
-    } *> Task.unit
+    } *> UIO.unit catchAll {
+      case NonFatal(nonFatal) =>
+        IO.fail(EventProblem(Messages.failedToSendSqsMessage(request.getMessageBody), Some(nonFatal)))
+      case fatal =>
+        IO.die(fatal)
+    }
 
 /**
  * Factory for AWS SQS event publishers.

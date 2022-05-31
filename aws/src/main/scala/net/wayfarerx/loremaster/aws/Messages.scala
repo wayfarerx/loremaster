@@ -37,4 +37,7 @@ private object Messages {
   def failedToParseSqsMessage(message: String): String =
     s"Failed to parse SQS message: $message."
 
+  def failedToSendSqsMessage(message: String): String =
+    s"Failed to send SQS message: $message."
+
 }

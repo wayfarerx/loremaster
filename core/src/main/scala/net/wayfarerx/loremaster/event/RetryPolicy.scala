@@ -180,18 +180,18 @@ object RetryPolicy extends ((RetryPolicy.Backoff, RetryPolicy.Termination) => Re
 
     /** Support for retry termination policies as configuration data. */
     given Data[Termination] = Data.define("RetryPolicy.Termination") { data =>
-      Data[Int] apply data map LimitRetries.apply orElse (Data[FiniteDuration] apply data map LimitDuration.apply)
+      Data[Int] apply data map LimitAttempts.apply orElse (Data[FiniteDuration] apply data map LimitDuration.apply)
     }
 
     /** The default backoff policy. */
-    val Default: Termination = LimitRetries(2)
+    val Default: Termination = LimitAttempts(2)
 
     /**
-     * Limits the number of retry attempts.
+     * Limits the number of attempts.
      *
-     * @param maximum The maximum number of retry attempts.
+     * @param maximum The maximum number of attempts.
      */
-    case class LimitRetries(maximum: Int) extends Termination :
+    case class LimitAttempts(maximum: Int) extends Termination :
 
       /* Limit the number of retry attempts. */
       override def apply[T: Event](event: T): Boolean =
@@ -201,9 +201,9 @@ object RetryPolicy extends ((RetryPolicy.Backoff, RetryPolicy.Termination) => Re
       override def toString: String = maximum.toString
 
     /**
-     * Limits the duration of all retry attempts.
+     * Limits the duration of all attempts.
      *
-     * @param maximum The maximum duration of all retry attempts.
+     * @param maximum The maximum duration of all attempts.
      */
     case class LimitDuration(maximum: FiniteDuration) extends Termination :
 

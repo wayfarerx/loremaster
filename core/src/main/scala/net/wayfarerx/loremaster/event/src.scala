@@ -11,9 +11,9 @@
  */
 
 package net.wayfarerx.loremaster
-package nlp
+package event
 
 import zio.IO
 
-/** The effect type used by the NLP subsystem. */
-type NlpEffect[T] = IO[NlpProblem, T]
+/** The effect type used by the event subsystem. */
+type EventEffect[T] = IO[EventProblem, T]

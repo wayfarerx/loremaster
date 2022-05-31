@@ -10,9 +10,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.wayfarerx.loremaster.twitter
+package net.wayfarerx.loremaster
+package twitter
 
 import zio.IO
 
-/** The effect type used by the analysis subsystem. */
+/** The effect type used by the Twitter subsystem. */
 type TwitterEffect[T] = IO[TwitterProblem, T]
