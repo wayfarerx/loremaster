@@ -18,8 +18,8 @@ import scala.util.control.NoStackTrace
 /**
  * A problem raised by the Twitter subsystem.
  *
- * @param message    The message that describes the problem.
- * @param causedBy       The throwable that caused this problem, defaults to none.
+ * @param message     The message that describes this problem.
+ * @param causedBy    The throwable that caused this problem, defaults to none.
  * @param shouldRetry True if the operation should be retried, defaults to false.
  */
 final class TwitterProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)

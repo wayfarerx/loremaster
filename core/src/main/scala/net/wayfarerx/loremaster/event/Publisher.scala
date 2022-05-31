@@ -15,12 +15,10 @@ package event
 
 import scala.concurrent.duration.*
 
-import zio.Task
-
 /**
  * Definition of the event publisher API.
  */
-trait Publisher[T] extends ((T, Option[FiniteDuration]) => Task[Unit]) :
+trait Publisher[T] extends ((T, Option[FiniteDuration]) => EventEffect[Unit]) :
 
   /**
    * Schedules an event for publishing.
@@ -28,7 +26,7 @@ trait Publisher[T] extends ((T, Option[FiniteDuration]) => Task[Unit]) :
    * @param event The event to publish.
    * @return The result of scheduling an event for publishing.
    */
-  final def apply(event: T): Task[Unit] = apply(event, None)
+  final def apply(event: T): EventEffect[Unit] = apply(event, None)
 
   /**
    * Schedules an event for publishing.
@@ -37,4 +35,4 @@ trait Publisher[T] extends ((T, Option[FiniteDuration]) => Task[Unit]) :
    * @param delay The delay to await before publishing.
    * @return The result of scheduling an event for publishing.
    */
-  final def apply(event: T, delay: FiniteDuration): Task[Unit] = apply(event, Option(delay))
+  final def apply(event: T, delay: FiniteDuration): EventEffect[Unit] = apply(event, Option(delay))

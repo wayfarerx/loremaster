@@ -13,8 +13,6 @@
 package net.wayfarerx.loremaster
 package twitter
 
-import scala.util.control.NonFatal
-
 import zio.IO
 
 import event.*
@@ -39,9 +37,8 @@ final class TwitterService(
     (client.postTweet(event.book) *> log.info(Messages.tweeted(event))) catchSome {
       case problem if problem.shouldRetry =>
         retryPolicy(event).fold(IO.fail(problem)) { backoff =>
-          log.warn(Messages.retryingTweet(event, backoff)) *> publisher(event.next, backoff).catchAll {
-            case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.failedToRetryTweet(event), Some(nonFatal)))
-            case fatal => IO.die(fatal)
+          log.warn(Messages.retryingTweet(event, backoff)) *> publisher(event.next, backoff) catchAll { thrown =>
+            IO.fail(TwitterProblem(Messages.failedToRetryTweet(event), Some(thrown)))
           }
         }
     }

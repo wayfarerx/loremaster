@@ -10,7 +10,8 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.wayfarerx.loremaster.logging
+package net.wayfarerx.loremaster
+package logging
 
 import zio.IO
 

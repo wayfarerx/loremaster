@@ -1,4 +1,4 @@
-/* src.scala
+/* EventProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,9 +11,16 @@
  */
 
 package net.wayfarerx.loremaster
-package nlp
+package event
 
-import zio.IO
+import scala.util.control.NoStackTrace
 
-/** The effect type used by the NLP subsystem. */
-type NlpEffect[T] = IO[NlpProblem, T]
+/**
+ * A problem raised by the event subsystem.
+ *
+ * @param message     The message that describes this problem.
+ * @param causedBy    The throwable that caused this problem, defaults to none.
+ * @param shouldRetry True if the operation should be retried, defaults to false.
+ */
+final class EventProblem(message: String, causedBy: Option[Throwable] = None)
+  extends Problem(message, causedBy)
