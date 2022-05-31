@@ -30,7 +30,7 @@ final class AwsLogging(config: Configuration, logger: LambdaLogger) extends Logg
 
   /* Create a log with the specified name. */
   override def apply(name: String): LoggingEffect[Log] = for
-    threshold <- config.getOrElse(s"$name.log", Log.Level.Warn) catchAll { thrown =>
+    threshold <- config.getOrElse(s"$name.logging", Log.Level.Warn) catchAll { thrown =>
       IO.fail(LoggingProblem(Messages.invalidLoggingConfiguration(name), Some(thrown)))
     }
   yield AwsLogging.Logger(name, threshold, logger)

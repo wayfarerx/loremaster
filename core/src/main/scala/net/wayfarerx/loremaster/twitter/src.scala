@@ -1,4 +1,4 @@
-/* AnalysisProblem.scala
+/* src.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -10,15 +10,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.wayfarerx.loremaster
-package analysis
+package net.wayfarerx.loremaster.twitter
 
-/**
- * A problem raised by the analysis subsystem.
- *
- * @param message     The message that describes this problem.
- * @param causedBy    The throwable that caused this problem, defaults to none.
- * @param shouldRetry True if the operation should be retried, defaults to false.
- */
-final class AnalysisProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
-  extends Problem(message, causedBy, shouldRetry)
+import zio.IO
+
+/** The effect type used by the analysis subsystem. */
+type TwitterEffect[T] = IO[TwitterProblem, T]

@@ -42,18 +42,9 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandle
         logging <- RIO.service[Logging]
         log <- logging.log[TwitterService]
         retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
-        consumerKey <- config[String](TwitterConsumerKey)
-        consumerSecret <- config[String](TwitterConsumerSecret)
-        accessToken <- config[String](TwitterAccessToken)
-        accessTokenSecret <- config[String](TwitterAccessTokenSecret)
-        connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
+        connection <- TwitterConnection.configure(config)
         queueName <- config[String](TwitterQueueName)
-      yield TwitterService(
-        log,
-        retryPolicy,
-        TwitterConnection(consumerKey, consumerSecret, accessToken, accessTokenSecret, connectionTimeout),
-        SqsPublisher[TwitterEvent](queueName)
-      )
+      yield TwitterService(log, retryPolicy, connection, SqsPublisher[TwitterEvent](queueName))
     }
 
   /* Publish the specified book to Twitter. */

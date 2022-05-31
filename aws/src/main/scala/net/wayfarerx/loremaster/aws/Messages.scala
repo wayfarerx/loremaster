@@ -26,10 +26,10 @@ private object Messages {
     s"""Unable to access configuration data for "$key" in the environment."""
 
   def invalidConfigurationData(key: String, `type`: String): String =
-    s"""Invalid configuration data for "$key:${`type`}" found in the environment."""
+    s"""Invalid configuration data for "$key: ${`type`}" found in the environment."""
 
   def invalidLoggingConfiguration(name: String): String =
-    s"""Invalid logging configuration for "$name" found in the environment."""
+    s"""Invalid logging configuration for "$name"."""
 
   def failedToDeliverSqsMessage(message: String): String =
     s"Failed to deliver SQS message: $message."
