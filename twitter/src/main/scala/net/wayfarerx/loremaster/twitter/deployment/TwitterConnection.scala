@@ -36,17 +36,17 @@ final class TwitterConnection(connection: Twitter) extends TwitterClient :
   /* Post a book to Twitter. */
   override def postTweet(book: Book): IO[TwitterProblem, Unit] = Task {
     connection.updateStatus(book.toString)
-  } catchAll {
+  } *> Task.unit catchAll {
     case thrown: TwitterException => IO.fail(
       TwitterProblem(
-        Messages.twitterFailure(thrown.getMessage),
+        Messages.twitterFailure(thrown.getStatusCode),
         Some(thrown),
         thrown.getStatusCode == 429 || thrown.getStatusCode >= 500
       )
     )
-    case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.twitterError(nonFatal.getMessage), Some(nonFatal)))
+    case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.twitterError, Some(nonFatal)))
     case fatal => IO.die(fatal)
-  } map (_ => ())
+  }
 
 /**
  * Factory for Twitter connections.

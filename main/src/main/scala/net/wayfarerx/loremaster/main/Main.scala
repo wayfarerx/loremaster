@@ -44,11 +44,11 @@ object Main:
           "Parameters" -> fromFields(deployment.parameters),
           "Resources" -> fromFields(deployment.resources)
         )))
-      } catchAll {
-        case NonFatal(thrown) =>
-          console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown)) *> Task.fail(thrown)
-        case thrown =>
-          Task.die(thrown)
       }
+    } catchAll {
+      case NonFatal(nonFatal) =>
+        console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(nonFatal)) *> Task.fail(nonFatal)
+      case fatal =>
+        Task.die(fatal)
     }
   }

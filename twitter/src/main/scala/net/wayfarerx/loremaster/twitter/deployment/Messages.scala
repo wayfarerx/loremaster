@@ -41,6 +41,6 @@ private object Messages:
 
   def maxBatchingWindow: String = s"The $Application $Twitter maximum batching window in seconds."
 
-  def twitterError(message: String): String = s"Twitter error: $message"
+  def twitterError: String = s"Twitter HTTP request failed for unknown reasons."
 
-  def twitterFailure(message: String): String = s"Twitter failure: $message"
+  def twitterFailure(statusCode: Int): String = s"Twitter HTTP request failed with status code $statusCode."

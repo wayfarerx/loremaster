@@ -13,14 +13,11 @@
 package net.wayfarerx.loremaster
 package event
 
-import scala.util.control.NoStackTrace
-
 /**
  * A problem raised by the event subsystem.
  *
- * @param message     The message that describes this problem.
- * @param causedBy    The throwable that caused this problem, defaults to none.
- * @param shouldRetry True if the operation should be retried, defaults to false.
+ * @param message  The message that describes this problem.
+ * @param causedBy The throwable that caused this problem, defaults to none.
  */
 final class EventProblem(message: String, causedBy: Option[Throwable] = None)
   extends Problem(message, causedBy)
