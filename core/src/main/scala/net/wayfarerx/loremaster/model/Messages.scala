@@ -19,13 +19,13 @@ package model
 private object Messages:
 
   def invalidId(repr: String): String =
-    s"Unable to decode ID from $repr"
+    s"Unable to decode ID from $repr."
 
   def invalidLocation(repr: String): String =
-    s"Unable to decode location from $repr"
+    s"Unable to decode location from $repr."
 
   def invalidToken: String =
-    "Unable to decode token from JSON"
+    "Unable to decode token from JSON."
 
   def invalidNameTokenCategory(repr: String): String =
-    s"Unable to decode name token category from $repr"
+    s"Unable to decode name token category from $repr."

@@ -13,8 +13,6 @@
 package net.wayfarerx.loremaster
 package configuration
 
-import scala.util.control.NoStackTrace
-
 /**
  * A problem raised by the configuration subsystem.
  *
