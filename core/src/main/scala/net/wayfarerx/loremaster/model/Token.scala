@@ -13,7 +13,6 @@
 package net.wayfarerx.loremaster
 package model
 
-import cats.syntax.applicativeError.catsSyntaxApplicativeError
 import cats.syntax.functor.*
 
 import io.circe.{Decoder, Encoder}
@@ -127,7 +126,7 @@ object Token:
       given Ordering[Category] = _.ordinal - _.ordinal
 
       /** The encoding of name categories to JSON. */
-      given Encoder[Category] = Encoder[String].contramap(_.toString.toLowerCase)
+      given Encoder[Category] = Encoder[String].contramap(_.toString)
 
       /** The decoding of name categories from JSON. */
       given Decoder[Category] = Decoder[String] emap { category =>

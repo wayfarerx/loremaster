@@ -64,7 +64,7 @@ class TokenTest extends AnyFlatSpec with should.Matchers :
       "pos" -> Json.fromString(testText.pos)
     )
     Encoder[Token].apply(testText) shouldBe Encoder[Text].apply(testText)
-    Encoder[Category].apply(testName.category) shouldBe Json.fromString(testName.category.toString.toLowerCase)
+    Encoder[Category].apply(testName.category) shouldBe Json.fromString(testName.category.toString)
     Encoder[Name].apply(testName) shouldBe Json.obj(
       "name" -> Json.fromString(testName.name),
       "category" -> Encoder[Category].apply(testName.category)
