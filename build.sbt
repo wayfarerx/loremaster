@@ -20,6 +20,9 @@ lazy val Aws = "aws"
 /** The "nlp" string". */
 lazy val Nlp = "nlp"
 
+/** The "repository" string". */
+lazy val Repository = "repository"
+
 /** The "twitter" string". */
 lazy val Twitter = "twitter"
 
@@ -78,6 +81,7 @@ lazy val loremaster = project.in(file(".")).aggregate(
   core,
   nlp,
   aws,
+  repository,
   twitter,
   main
 )
@@ -96,7 +100,7 @@ lazy val core = project.in(file(Core))
     testSettings
   )
 
-/** The Loremaster analysis project. */
+/** The Loremaster NLP project. */
 lazy val nlp = project.in(file(Nlp))
   .settings(
     librarySettings(Nlp),
@@ -115,13 +119,19 @@ lazy val aws = project.in(file(Aws))
     testSettings
   ).dependsOn(core)
 
+/** The Loremaster repository project. */
+lazy val repository = project.in(file(Repository))
+  .settings(
+    librarySettings(Repository)
+  ).dependsOn(aws)
+
 /** The Loremaster Twitter project. */
 lazy val twitter = project.in(file(Twitter))
   .enablePlugins(PublishToS3)
   .settings(
     functionSettings(Twitter),
     libraryDependencies += Twitter4JCore
-  ).dependsOn(core, aws)
+  ).dependsOn(aws)
 
 /** The Loremaster main project. */
 lazy val main = project.in(file(Main))
