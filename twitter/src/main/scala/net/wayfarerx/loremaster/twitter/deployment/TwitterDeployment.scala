@@ -50,8 +50,7 @@ trait TwitterDeployment extends Deployment :
         TwitterConsumerSecret -> resolveSecret(TwitterConsumerSecret),
         TwitterAccessToken -> resolveSecret(TwitterAccessToken),
         TwitterAccessTokenSecret -> resolveSecret(TwitterAccessTokenSecret),
-        TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
-        TwitterQueueName -> sqsQueueName[TwitterEvent]
+        TwitterConnectionTimeout -> ref(TwitterConnectionTimeout)
       ),
       ref(TwitterEnabled),
       ref(TwitterBatchSize),

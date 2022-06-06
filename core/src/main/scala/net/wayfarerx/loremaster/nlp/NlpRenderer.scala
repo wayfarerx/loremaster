@@ -18,12 +18,4 @@ import model.*
 /**
  * Definition of the NLP renderer.
  */
-trait NlpRenderer:
-
-  /**
-   * Constructs a book from the specified lore.
-   *
-   * @param lore The lore to construct a book from.
-   * @return A book constructed from the specified lore.
-   */
-  def render(lore: Lore): NlpEffect[Book]
+trait NlpRenderer extends (Lore => NlpEffect[Book])

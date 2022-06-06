@@ -1,4 +1,4 @@
-/* Messages.scala
+/* ComposerProblem.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,19 +11,14 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
-
-import scala.concurrent.duration.*
+package composer
 
 /**
- * The messages provided by the Twitter package.
+ * A problem raised by the composer subsystem.
+ *
+ * @param message     The message that describes this problem.
+ * @param causedBy    The throwable that caused this problem, defaults to none.
+ * @param shouldRetry True if the operation should be retried, defaults to false.
  */
-private object Messages:
-
-  def tweeted(event: TwitterEvent): String = s"Tweeted: ${format(event)}"
-
-  def retryingTweet(event: TwitterEvent, backoff: FiniteDuration) = s"Retrying tweet after $backoff: ${format(event)}"
-
-  def failedToRetryTweet(event: TwitterEvent) = s"Failed to retry tweet: ${format(event)}"
-
-  private[this] def format(event: TwitterEvent): String = event.book.paragraphs.iterator mkString " "
+final class ComposerProblem(message: String, causedBy: Option[Throwable] = None, shouldRetry: Boolean = false)
+  extends Problem(message, causedBy, shouldRetry)

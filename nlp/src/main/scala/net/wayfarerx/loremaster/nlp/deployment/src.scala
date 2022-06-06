@@ -19,12 +19,6 @@ import java.net.URI
 
 import zio.{IO, Task, TaskManaged, UIO, ZManaged}
 
-/** The "Nlp" prefix. */
-private inline def Nlp = "Nlp"
-
-/** The NLP detokenizer dictionary variable name. */
-val NlpDetokenizerDictionary = s"${Nlp}DetokenizerDictionary"
-
 /** The name of the latin detokenizer XML resource. */
 val DefaultDetokenizerDictionary = "opennlp/latin-detokenizer.xml"
 
@@ -38,7 +32,7 @@ val DefaultDetokenizerDictionary = "opennlp/latin-detokenizer.xml"
 private def loadData(uri: Option[URI], fallbackResource: String): TaskManaged[InputStream] =
   ZManaged.fromAutoCloseable {
     for
-      specified <- uri.fold(Task.none)(url => Task(Some(url.toURL)))
+      specified <- uri.fold(Task.none)(url => Task(Option(url.toURL)))
       selected <- specified.fold(Task(Option(getClass.getClassLoader.getResource(fallbackResource))))(Task.some)
       result <- selected.fold {
         Task.fail(FileNotFoundException(uri.fold(fallbackResource)(_.toString)))

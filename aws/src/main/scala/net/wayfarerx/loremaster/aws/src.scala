@@ -13,12 +13,15 @@
 package net.wayfarerx.loremaster
 package aws
 
+import scala.reflect.ClassTag
+
 import com.amazonaws.services.lambda.runtime.Context
 
 import zio.{Has, IO, RLayer, ZEnv, ZLayer}
 import zio.system.System
 
 import configuration.*
+import event.*
 import logging.*
 
 /** The type of the AWS environment. */
@@ -29,6 +32,12 @@ def AwsEnv(context: Context): RLayer[ZEnv, AwsEnv] =
   val config: RLayer[ZEnv, Has[Configuration]] = ZLayer.fromService(AwsConfiguration(_))
   val logs: RLayer[ZEnv, Has[Logging]] = config >>> ZLayer.fromService(AwsLogging(_, context.getLogger))
   ZLayer.requires[ZEnv] ++ config ++ logs
+
+/** AWS extensions to all events. */
+extension [T : ClassTag] (event: Event[T])
+
+  /** Returns the name of the SQS queue associated with the event. */
+  def sqsQueueName: String = s"$Application${summon[ClassTag[T]].getClass.getSimpleName}Queue"
 
 /** The "2012-10-17" string. */
 inline def _2012_10_17 = "2012-10-17"
@@ -96,6 +105,9 @@ inline def MaximumBatchingWindowInSeconds: String = "MaximumBatchingWindowInSeco
 /** The "MemorySize" name. */
 inline def MemorySize: String = "MemorySize"
 
+/** The "MemorySizeInMB" name. */
+inline def MemorySizeInMB: String = s"${MemorySize}InMB"
+
 /** The "Number" string. */
 inline def Number = "Number"
 
@@ -151,7 +163,7 @@ inline def Statement = "Statement"
 inline def Tags = "Tags"
 
 /** The "Timeout" name. */
-inline def Timeout: String = "Timeout"
+inline def TimeoutInSeconds: String = "TimeoutInSeconds"
 
 /** The "Type" string. */
 inline def Type = "Type"

@@ -14,6 +14,7 @@ package net.wayfarerx.loremaster
 package aws
 
 import scala.concurrent.duration.*
+import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
@@ -21,7 +22,7 @@ import com.amazonaws.services.sqs.model.SendMessageRequest
 
 import io.circe.Encoder
 
-import zio.{IO, UIO}
+import zio.IO
 
 import event.*
 
@@ -29,21 +30,24 @@ import event.*
  * Implementation of an AWS SQS event publisher.
  *
  * @tparam T The type of event to publish.
- * @param queueUrl  The URL of the SQS queue to publish to.
- * @param sqsClient The SQS client to use.
+ * @param sqs The SQS client to use.
  */
-final class SqsPublisher[T: Encoder](queueUrl: String, sqsClient: AmazonSQS) extends Publisher[T] :
+final class SqsPublisher[T: Encoder : Event : ClassTag](sqs: AmazonSQS) extends Publisher[T] :
 
   /* Schedule an event for publishing. */
-  override def apply(event: T, delay: Option[FiniteDuration]): EventEffect[Unit] =
-    val request = SendMessageRequest(queueUrl, emit(event))
+  override def apply(message: T, delay: Option[FiniteDuration]): EventEffect[Unit] =
+    val request = SendMessageRequest(Event[T].sqsQueueName, emit(message))
     IO {
-      sqsClient sendMessage delay.filter(_ >= Duration.Zero).fold(request) { _delay =>
-        request withDelaySeconds math.min(_delay.toSeconds, SqsPublisher.MaximumDelaySeconds).toInt
+      sqs sendMessage delay.filter(_ >= Duration.Zero).fold(request) { backoff =>
+        request withDelaySeconds math.min(backoff.toSeconds, SqsPublisher.MaximumDelaySeconds).toInt
       }
-    } *> UIO.unit catchAll {
+    } *> IO.unit catchAll {
       case NonFatal(nonFatal) =>
-        IO.fail(EventProblem(Messages.failedToSendSqsMessage(request.getMessageBody), Some(nonFatal)))
+        IO.fail(EventProblem(
+          Messages.failedToSendSqsMessage(request.getMessageBody),
+          Option(nonFatal),
+          true
+        ))
       case fatal =>
         IO.die(fatal)
     }
@@ -60,30 +64,27 @@ object SqsPublisher:
    * Creates an AWS SQS event publisher.
    *
    * @tparam T The type of event to publish.
-   * @param queueUrl The URL of the SQS queue to publish to.
    * @return A new AWS SQS event publisher.
    */
-  def apply[T: Encoder](queueUrl: String): SqsPublisher[T] =
-    apply(queueUrl, AmazonSQSClientBuilder.standard)
+  def apply[T: Encoder : Event : ClassTag]: SqsPublisher[T] =
+    apply(AmazonSQSClientBuilder.standard)
 
   /**
    * Creates an AWS SQS event publisher.
    *
    * @tparam T The type of event to publish.
-   * @param queueUrl   The URL of the SQS queue to publish to.
    * @param sqsBuilder The AWS SQS client builder to use.
    * @return A new AWS SQS event publisher.
    */
-  def apply[T: Encoder](queueUrl: String, sqsBuilder: AmazonSQSClientBuilder): SqsPublisher[T] =
-    apply(queueUrl, sqsBuilder.build)
+  def apply[T: Encoder : Event : ClassTag](sqsBuilder: AmazonSQSClientBuilder): SqsPublisher[T] =
+    apply(sqsBuilder.build)
 
   /**
    * Creates an AWS SQS event publisher.
    *
    * @tparam T The type of event to publish.
-   * @param queueUrl   The URL of the SQS queue to publish to.
-   * @param sqsClient The AWS SQS client to use.
+   * @param sqs The AWS SQS client to use.
    * @return A new AWS SQS event publisher.
    */
-  def apply[T: Encoder](queueUrl: String, sqsClient: AmazonSQS): SqsPublisher[T] =
-    new SqsPublisher(queueUrl, sqsClient)
+  def apply[T: Encoder : Event : ClassTag](sqs: AmazonSQS): SqsPublisher[T] =
+    new SqsPublisher(sqs)

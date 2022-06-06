@@ -28,7 +28,7 @@ final class AwsConfiguration(sys: System.Service) extends Configuration :
   /* Return the value of the specified configuration entry if it exists in the environment. */
   override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = for
     value <- sys.env(key) catchAll { thrown =>
-      IO.fail(ConfigurationProblem(Messages.unableToAccessConfigurationData(key), Some(thrown)))
+      IO.fail(ConfigurationProblem(Messages.unableToAccessConfigurationData(key), Option(thrown)))
     }
     result <- value.fold(UIO.none) {
       Configuration.Data[T].apply(_).fold {

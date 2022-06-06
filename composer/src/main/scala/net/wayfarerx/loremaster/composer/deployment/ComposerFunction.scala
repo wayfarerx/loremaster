@@ -11,39 +11,54 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
+package composer
 package deployment
 
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
-import zio.{Has, RIO, RLayer, ZLayer}
+import zio.{Has, RIO, RLayer, UIO, ZLayer}
+import zio.random.Random
 
 import aws.*
 import configuration.*
 import event.*
 import logging.*
+import twitter.*
+
+import nlp.deployment.OpenNlpRenderer
+import repository.deployment.MockRepository
 
 /**
- * An AWS SQS Lambda function that posts books to Twitter.
+ * An AWS SQS Lambda function that composes books.
  */
-final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
+final class ComposerFunction extends SqsFunction[ComposerEvent] with RequestHandler[SQSEvent, String] :
 
   /* The type of environment to use. */
-  override type Environment = AwsEnv & Has[TwitterService]
+  override type Environment = AwsEnv & Has[ComposerService]
 
   /* The environment constructor to use. */
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
         logging <- RIO.service[Logging]
+        log <- logging.log[ComposerService]
         config <- RIO.service[Configuration]
-        log <- logging.log[TwitterService]
-        retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
-        connection <- TwitterConnection.configure(config)
-      yield TwitterService(log, retryPolicy, connection, SqsPublisher[TwitterEvent])
+        retryPolicy <- config[RetryPolicy](ComposerRetryPolicy)
+        repository <- UIO(MockRepository) // FIXME Use a real repository.
+        rng <- RIO.service[Random.Service]
+        renderer <- OpenNlpRenderer.configure(ComposerNlpDetokenizerDictionary, config)
+      yield ComposerService(
+        log,
+        retryPolicy,
+        repository,
+        rng,
+        renderer,
+        SqsPublisher[TwitterEvent],
+        SqsPublisher[ComposerEvent]
+      )
     }
 
-  /* Publish the specified book to Twitter. */
-  override protected def onMessage(event: TwitterEvent): RIO[Environment, Unit] =
-    RIO.service[TwitterService].flatMap(_ (event))
+  /* Compose the specified book. */
+  override protected def onMessage(event: ComposerEvent): RIO[Environment, Unit] =
+    RIO.service[ComposerService].flatMap(_ (event))

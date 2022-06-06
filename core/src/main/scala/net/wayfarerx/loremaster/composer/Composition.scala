@@ -1,4 +1,4 @@
-/* Messages.scala
+/* Composition.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,19 +11,13 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
+package composer
 
-import scala.concurrent.duration.*
+import cats.data.NonEmptyList
 
 /**
- * The messages provided by the Twitter package.
+ * The specification for a composition.
+ * 
+ * @param sentenceCountPerParagraph The number of sentences to compose for each paragraph.
  */
-private object Messages:
-
-  def tweeted(event: TwitterEvent): String = s"Tweeted: ${format(event)}"
-
-  def retryingTweet(event: TwitterEvent, backoff: FiniteDuration) = s"Retrying tweet after $backoff: ${format(event)}"
-
-  def failedToRetryTweet(event: TwitterEvent) = s"Failed to retry tweet: ${format(event)}"
-
-  private[this] def format(event: TwitterEvent): String = event.book.paragraphs.iterator mkString " "
+case class Composition(sentenceCountPerParagraph: NonEmptyList[Int])

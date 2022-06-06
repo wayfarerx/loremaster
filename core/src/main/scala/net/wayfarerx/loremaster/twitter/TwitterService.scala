@@ -24,21 +24,24 @@ import logging.*
  * @param log         The log to use.
  * @param retryPolicy The retry policy to use.
  * @param client      The Twitter client to use.
- * @param publisher   The tweet publisher to retry with.
+ * @param fallback    The Twitter event publisher to retry with.
  */
 final class TwitterService(
   log: Log,
   retryPolicy: RetryPolicy,
   client: TwitterClient,
-  publisher: Publisher[TwitterEvent]
+  fallback: Publisher[TwitterEvent]
 ) extends (TwitterEvent => TwitterEffect[Unit]) :
 
-  override def apply(event: TwitterEvent): TwitterEffect[Unit] =
-    (client.postTweet(event.book) *> log.info(Messages.tweeted(event))) catchSome {
-      case problem if problem.shouldRetry =>
-        retryPolicy(event).fold(IO.fail(problem)) { backoff =>
-          log.warn(Messages.retryingTweet(event, backoff)) *> publisher(event.next, backoff) catchAll { thrown =>
-            IO.fail(TwitterProblem(Messages.failedToRetryTweet(event), Some(thrown)))
-          }
+  /* Handle a Twitter event. */
+  override def apply(event: TwitterEvent): TwitterEffect[Unit] = {
+    client.postTweet(event.book) *> log.info(Messages.tweeted(event))
+  } catchSome {
+    case problem if problem.shouldRetry =>
+      retryPolicy(event).fold(IO.fail(problem)) { backoff =>
+        log.warn(Messages.retryingTweet(event, backoff)) *>
+          fallback(Event[TwitterEvent].nextAttempt(event), backoff) catchAll { thrown =>
+          IO.fail(TwitterProblem(Messages.failedToRetryTweet(event), Option(thrown)))
         }
-    }
+      }
+  }

@@ -53,4 +53,4 @@ object ID:
    */
   def decode(string: String): Option[ID] =
     if string.isEmpty || string.forall(Dots) || string.exists(Slashes) then None
-    else Some(ID(string))
+    else Option(ID(string))

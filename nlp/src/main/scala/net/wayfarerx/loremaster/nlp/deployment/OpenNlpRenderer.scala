@@ -36,7 +36,7 @@ import model.*
 final class OpenNlpRenderer(detokenizer: Detokenizer) extends NlpRenderer :
 
   /* Construct a book from the specified lore. */
-  override def render(lore: Lore): NlpEffect[Book] =
+  override def apply(lore: Lore): NlpEffect[Book] =
     renderParagraphs(lore.paragraphs) map Book
 
   /* Render a non-empty list of paragraphs. */
@@ -60,7 +60,7 @@ final class OpenNlpRenderer(detokenizer: Detokenizer) extends NlpRenderer :
       case Token.Name(name, _) => name
     }.toArray, " ")
   } catchAll {
-    case NonFatal(nonFatal) => IO.fail(NlpProblem(Messages.failedToRenderSentence(sentence), Some(nonFatal)))
+    case NonFatal(nonFatal) => IO.fail(NlpProblem(Messages.failedToRenderSentence(sentence), Option(nonFatal)))
     case fatal => IO.die(fatal)
   }
 
@@ -80,11 +80,12 @@ object OpenNlpRenderer extends (Detokenizer => OpenNlpRenderer) :
   /**
    * Configures a new OpenNLP renderer.
    *
+   * @param detokenizerDictionary The name of the NLP detokenizer dictionary to use.
    * @param config The configuration to use.
    * @return A new OpenNLP renderer.
    */
-  def configure(config: Configuration): Task[OpenNlpRenderer] = for
-    dictionaryConfig <- config.get[String](NlpDetokenizerDictionary)
-    dictionaryUri <- dictionaryConfig.fold(UIO.none)(uri => Task(Some(URI.create(uri))))
+  def configure(detokenizerDictionary: String, config: Configuration): Task[OpenNlpRenderer] = for
+    dictionaryConfig <- config.get[String](detokenizerDictionary)
+    dictionaryUri <- dictionaryConfig.filterNot(_.isEmpty).fold(UIO.none)(uri => Task(Option(URI.create(uri))))
     dictionaryData <- loadData(dictionaryUri, DefaultDetokenizerDictionary).use(Task apply DetokenizationDictionary(_))
   yield apply(DictionaryDetokenizer(dictionaryData))

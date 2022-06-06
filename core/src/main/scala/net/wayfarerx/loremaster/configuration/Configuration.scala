@@ -34,10 +34,10 @@ trait Configuration:
    * @param key The key of the configuration entry to return.
    * @return The value of the specified configuration entry.
    */
-  final def apply[T: Data](key: String): ConfigurationEffect[T] = get(key) flatMap {
-    case Some(data) => UIO(data)
-    case None => IO.fail(ConfigurationProblem(Messages.configurationNotFound(key, Data[T].`type`)))
-  }
+  final def apply[T: Data](key: String): ConfigurationEffect[T] = for 
+    value <- get[T](key)
+    result <- value.fold(IO.fail(ConfigurationProblem(Messages.configurationNotFound(key, Data[T].`type`))))(UIO(_))
+  yield result
 
   /**
    * Returns the value of the specified configuration entry if it exists.
@@ -57,7 +57,7 @@ trait Configuration:
    * @return The value of the specified configuration entry if it exists or the supplied default.
    */
   final def getOrElse[T: Data](key: String, default: => T): ConfigurationEffect[T] =
-    get(key) map (_ getOrElse default)
+    get[T](key) map (_ getOrElse default)
 
 /**
  * Definitions associated with configurations.
