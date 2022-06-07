@@ -163,6 +163,9 @@ inline def Statement = "Statement"
 inline def Tags = "Tags"
 
 /** The "Timeout" name. */
+inline def Timeout: String = "Timeout"
+
+/** The "TimeoutInSeconds" name. */
 inline def TimeoutInSeconds: String = "TimeoutInSeconds"
 
 /** The "Type" string. */
