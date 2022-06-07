@@ -276,7 +276,7 @@ trait Deployment:
           Code -> obj("S3Bucket" -> s3Bucket, "S3Key" -> s3Key),
           Handler -> handler,
           MemorySize -> memorySize,
-          Timeout -> timeout,
+          TimeoutInSeconds -> timeout,
           Role -> join("",
             "arn:aws:iam::",
             ref("AWS::AccountId"),

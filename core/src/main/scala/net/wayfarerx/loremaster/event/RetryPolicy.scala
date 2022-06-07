@@ -38,7 +38,7 @@ case class RetryPolicy(
    * @return The retry delay to use if the specified event should be retried.
    */
   def apply[T: Event](event: T): Option[FiniteDuration] =
-    if termination(event) then None else Some(backoff(event))
+    if termination(event) then None else Option(backoff(event))
 
   /* Encode the retry policy. */
   override def toString: String = s"$backoff:$termination"
@@ -62,9 +62,9 @@ object RetryPolicy extends ((RetryPolicy.Backoff, RetryPolicy.Termination) => Re
         Data[Backoff].apply(data.substring(0, foundAt)) ->
           Data[Termination].apply(data drop foundAt dropWhile (_ == Separator)) match
           case (None, None) => None
-          case (Some(backoff), None) => Some(Default.copy(backoff = backoff))
-          case (None, Some(termination)) => Some(Default.copy(termination = termination))
-          case (Some(backoff), Some(termination)) => Some(RetryPolicy(backoff, termination))
+          case (Some(backoff), None) => Option(Default.copy(backoff = backoff))
+          case (None, Some(termination)) => Option(Default.copy(termination = termination))
+          case (Some(backoff), Some(termination)) => Option(RetryPolicy(backoff, termination))
   }
 
   /** The default retry policy. */
@@ -184,7 +184,7 @@ object RetryPolicy extends ((RetryPolicy.Backoff, RetryPolicy.Termination) => Re
     }
 
     /** The default backoff policy. */
-    val Default: Termination = LimitAttempts(2)
+    val Default: Termination = LimitAttempts(3)
 
     /**
      * Limits the number of attempts.

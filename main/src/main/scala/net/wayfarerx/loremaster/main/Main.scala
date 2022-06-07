@@ -15,12 +15,10 @@ package main
 
 import java.io.{File, PrintStream}
 import java.nio.charset.StandardCharsets
-
 import scala.util.control.NonFatal
-
 import io.circe.Json.{fromFields, fromString, obj}
-
-import zio.{Task, Runtime, ZManaged}
+import net.wayfarerx.loremaster.composer.deployment.ComposerDeployment
+import zio.{Runtime, Task, ZManaged}
 import zio.console
 
 /**
@@ -36,7 +34,8 @@ object Main:
         case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
     } use { output =>
       val deployment =
-        new twitter.deployment.TwitterDeployment {}
+        new ComposerDeployment
+          with twitter.deployment.TwitterDeployment
       Task {
         output.append(emit(obj(
           "AWSTemplateFormatVersion" -> fromString("2010-09-09"),

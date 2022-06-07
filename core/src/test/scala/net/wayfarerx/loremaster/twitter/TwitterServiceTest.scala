@@ -56,12 +56,12 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     val publisher = mock[Publisher[TwitterEvent]]
     val problem = TwitterProblem("PROBLEM", None, true)
     when(client.postTweet(testEvent.book)) thenReturn IO.fail(problem)
-    when(publisher.apply(testEvent.next, RetryPolicy.Backoff.Default(testEvent))) thenReturn Task.unit
+    when(publisher.apply(Event[TwitterEvent].nextAttempt(testEvent), RetryPolicy.Backoff.Default(testEvent))) thenReturn Task.unit
     Runtime.default.unsafeRunTask {
       TwitterService(Log.NoOp, RetryPolicy.Default, client, publisher).apply(testEvent)
     } shouldBe()
     verify(client).postTweet(testEvent.book)
-    verify(publisher).apply(testEvent.next, RetryPolicy.Backoff.Default(testEvent))
+    verify(publisher).apply(Event[TwitterEvent].nextAttempt(testEvent), RetryPolicy.Backoff.Default(testEvent))
   }
 
   it.should("propagate fatal problems when posting tweets") in {

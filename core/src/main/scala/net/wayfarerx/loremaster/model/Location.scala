@@ -13,6 +13,7 @@
 package net.wayfarerx.loremaster
 package model
 
+import scala.annotation.targetName
 import scala.math.Ordering.Implicits.given
 
 import cats.Foldable
@@ -46,15 +47,19 @@ case class Location(path: NonEmptyList[ID]):
   def reverse: Location = Location(path.reverse)
 
   /** Appends that ID to this location */
+  @targetName("append")
   def :+(id: ID): Location = Location(path :+ id)
 
   /** Prepends that ID to this location */
+  @targetName("prepend")
   def +:(id: ID): Location = Location(id :: path)
 
   /** Appends that location to this location */
+  @targetName("appending")
   def :++(that: Location): Location = Location(path ::: that.path)
 
   /** Prepends that location to this location */
+  @targetName("prepending")
   def ++:(that: Location): Location = Location(that.path ::: path)
 
   /**
@@ -130,13 +135,9 @@ object Location extends (NonEmptyList[ID] => Location) :
    */
   @annotation.tailrec
   private[this] def decoding(stack: Vector[ID], remaining: List[String]): Option[NonEmptyList[ID]] = remaining match
-    case "." :: tail =>
-      decoding(stack, tail)
-    case ".." :: tail =>
-      if stack.isEmpty then None
-      else decoding(stack.init, tail)
-    case head :: tail =>
-      ID.decode(head) match
-        case Some(id) => decoding(stack :+ id, tail)
-        case None => None
+    case "." :: tail => decoding(stack, tail)
+    case ".." :: tail => if stack.isEmpty then None else decoding(stack.init, tail)
+    case head :: tail => ID.decode(head) match
+      case Some(id) => decoding(stack :+ id, tail)
+      case None => None
     case Nil => NonEmptyList.fromFoldable(stack)

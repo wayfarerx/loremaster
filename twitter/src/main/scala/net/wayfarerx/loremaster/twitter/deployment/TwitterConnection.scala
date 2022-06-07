@@ -40,11 +40,11 @@ final class TwitterConnection(connection: Twitter) extends TwitterClient :
     case thrown: TwitterException => IO.fail(
       TwitterProblem(
         Messages.twitterFailure(thrown.getStatusCode),
-        Some(thrown),
+        Option(thrown),
         thrown.getStatusCode == 429 || thrown.getStatusCode >= 500
       )
     )
-    case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.twitterError, Some(nonFatal)))
+    case NonFatal(nonFatal) => IO.fail(TwitterProblem(Messages.twitterError, Option(nonFatal)))
     case fatal => IO.die(fatal)
   }
 

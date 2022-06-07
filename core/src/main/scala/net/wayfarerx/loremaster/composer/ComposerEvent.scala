@@ -1,4 +1,4 @@
-/* TwitterEvent.scala
+/* ComposerEvent.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -11,7 +11,7 @@
  */
 
 package net.wayfarerx.loremaster
-package twitter
+package composer
 
 import java.time.Instant
 
@@ -19,39 +19,38 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
 import event.*
-import model.*
 
 /**
- * Definition of a Twitter event.
+ * Definition of a composer event.
  *
- * @param book      The book that should be tweeted.
- * @param createdAt The instant that this event was crated at.
- * @param retry     The retry count for this event.
+ * @param composition The composition specification to follow.
+ * @param createdAt   The instant that this event was crated at.
+ * @param retry       The retry count for this event.
  */
-case class TwitterEvent(book: Book, createdAt: Instant = Instant.now, retry: Option[Int] = None)
+case class ComposerEvent(composition: Composition, createdAt: Instant = Instant.now, retry: Option[Int] = None)
 
 /**
- * Factory for Twitter events.
+ * Factory for composer events.
  */
-object TwitterEvent extends ((Book, Instant, Option[Int]) => TwitterEvent) :
+object ComposerEvent extends ((Composition, Instant, Option[Int]) => ComposerEvent) :
 
-  /** The encoding of Twitter events to JSON. */
-  given Encoder[TwitterEvent] = deriveEncoder[TwitterEvent].mapJson(_.dropNullValues)
+  /** The encoding of composer events to JSON. */
+  given Encoder[ComposerEvent] = deriveEncoder[ComposerEvent].mapJson(_.dropNullValues)
 
-  /** The decoding of Twitter events from JSON. */
-  given Decoder[TwitterEvent] = deriveDecoder
+  /** The decoding of composer events from JSON. */
+  given Decoder[ComposerEvent] = deriveDecoder
 
-  /** Support for retrying Twitter events. */
-  given Event[TwitterEvent] = new Event[TwitterEvent] :
+  /** Support for retrying composer events. */
+  given Event[ComposerEvent] = new Event[ComposerEvent] :
 
     /* Return the instant the event was originally created at. */
-    override def createdAt(event: TwitterEvent): Instant =
+    override def createdAt(event: ComposerEvent): Instant =
       event.createdAt
 
     /* Return the number of times the event has been previously attempted. */
-    override def previousAttempts(event: TwitterEvent): Int =
+    override def previousAttempts(event: ComposerEvent): Int =
       event.retry.fold(0)(math.max(0, _))
 
     /* Return the specified event with its retry count incremented. */
-    override def nextAttempt(event: TwitterEvent): TwitterEvent =
+    override def nextAttempt(event: ComposerEvent): ComposerEvent =
       event.copy(retry = Option(event.retry.fold(1)(Math.max(0, _) + 1)))

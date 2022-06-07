@@ -14,21 +14,16 @@ package net.wayfarerx.loremaster
 package twitter
 package deployment
 
-import scala.concurrent.duration.FiniteDuration
-
 import aws.*
 
 /** The "Twitter" prefix. */
 private inline def Twitter = "Twitter"
 
 /** The Twitter memory size variable name. */
-inline def TwitterMemorySizeInMB = s"$Twitter${MemorySize}InMB"
+inline def TwitterMemorySizeInMB = s"$Twitter$MemorySizeInMB"
 
 /** The Twitter timeout variable name. */
-inline def TwitterTimeoutInSeconds = s"$Twitter${Timeout}InSeconds"
-
-/** The Twitter queue name variable name. */
-inline def TwitterQueueName: String = s"${Twitter}QueueName"
+inline def TwitterTimeoutInSeconds = s"$Twitter$TimeoutInSeconds"
 
 /** The Twitter consumer key variable name. */
 inline def TwitterConsumerKey: String = s"${Twitter}ConsumerKey"
