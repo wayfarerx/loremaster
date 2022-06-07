@@ -15,7 +15,7 @@ package event
 
 import scala.concurrent.duration.*
 
-import zio.{Runtime, Task}
+import zio.{Runtime, UIO}
 
 import org.scalatest.*
 import flatspec.*
@@ -30,7 +30,7 @@ class PublisherTest extends AnyFlatSpec with should.Matchers :
     var _event = ""
     var _delay = Option(1.second)
     val publisher = new Publisher[String]:
-      override def apply(event: String, delay: Option[FiniteDuration]): Task[Unit] = Task {
+      override def apply(event: String, delay: Option[FiniteDuration]): EventEffect[Unit] = UIO {
         _event = event
         _delay = delay
       }

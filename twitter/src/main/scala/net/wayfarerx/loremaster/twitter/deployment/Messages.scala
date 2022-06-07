@@ -27,7 +27,7 @@ private object Messages:
 
   def bearerToken: String = s"The $Application $Twitter bearer token."
 
-  def memorySize: String = s"The amount of memory afforded to the $Application $$Twitter function in MB."
+  def memorySize: String = s"The amount of memory afforded to the $Application $Twitter function in MB."
 
   def timeout: String = s"The timeout applied to the $Application $Twitter function in seconds."
 
@@ -40,3 +40,7 @@ private object Messages:
   def batchSize: String = s"The $Application $Twitter batch size."
 
   def maxBatchingWindow: String = s"The $Application $Twitter maximum batching window in seconds."
+
+  def twitterError: String = s"Twitter HTTP request failed for unknown reasons."
+
+  def twitterFailure(statusCode: Int): String = s"Twitter HTTP request failed with status code $statusCode."

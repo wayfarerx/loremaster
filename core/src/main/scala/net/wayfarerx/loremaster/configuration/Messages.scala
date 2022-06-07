@@ -14,9 +14,10 @@ package net.wayfarerx.loremaster
 package configuration
 
 /**
- * The messages provided by the loremaster configuraation.
+ * The messages provided by the loremaster configuration.
  */
 private object Messages:
 
+  /** A message explaining that a configuration value was not found. */
   def configurationNotFound(key: String, `type`: String): String =
-    s"""Could not find configuration "$key" of type "${`type`}""""
+    s"""Could not find configuration "$key" of type "${`type`}.""""

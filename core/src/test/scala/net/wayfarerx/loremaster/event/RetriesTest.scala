@@ -74,7 +74,7 @@ class RetriesTest extends AnyFlatSpec with should.Matchers :
   it.should("support retry limits") in {
     val event1 = TestEvent()
     val event2 = event1.nextAttempt
-    val retryPolicy = event.RetryPolicy(backoff, Termination.LimitRetries(1))
+    val retryPolicy = event.RetryPolicy(backoff, Termination.LimitAttempts(1))
     retryPolicy(event1) shouldBe Some(delay)
     retryPolicy(event2) shouldBe None
   }
@@ -92,11 +92,11 @@ class RetriesTest extends AnyFlatSpec with should.Matchers :
     config("+4 seconds") shouldBe Some(Default.copy(backoff = Backoff.Linear(4.seconds)))
     config("~5 seconds") shouldBe Some(Default.copy(backoff = Backoff.Golden(5.seconds)))
     config(":") shouldBe None
-    config(":3") shouldBe Some(Default.copy(termination = Termination.LimitRetries(3)))
+    config(":3") shouldBe Some(Default.copy(termination = Termination.LimitAttempts(3)))
     config(":3 seconds") shouldBe Some(Default.copy(termination = Termination.LimitDuration(3.seconds)))
-    config("3 seconds:3") shouldBe Some(event.RetryPolicy(Backoff.Constant(3.seconds), Termination.LimitRetries(3)))
-    config("+4 seconds:4") shouldBe Some(event.RetryPolicy(Backoff.Linear(4.seconds), Termination.LimitRetries(4)))
-    config("~5 seconds:5") shouldBe Some(event.RetryPolicy(Backoff.Golden(5.seconds), Termination.LimitRetries(5)))
+    config("3 seconds:3") shouldBe Some(event.RetryPolicy(Backoff.Constant(3.seconds), Termination.LimitAttempts(3)))
+    config("+4 seconds:4") shouldBe Some(event.RetryPolicy(Backoff.Linear(4.seconds), Termination.LimitAttempts(4)))
+    config("~5 seconds:5") shouldBe Some(event.RetryPolicy(Backoff.Golden(5.seconds), Termination.LimitAttempts(5)))
   }
 
   /** An event to test with. */

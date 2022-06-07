@@ -13,39 +13,41 @@
 package net.wayfarerx.loremaster
 package main
 
-import java.io.{File, PrintWriter}
+import java.io.{File, PrintStream}
 import java.nio.charset.StandardCharsets
-
+import scala.util.control.NonFatal
 import io.circe.Json.{fromFields, fromString, obj}
-
-import zio.{ExitCode, Task, Runtime, UIO, URIO, ZEnv, ZManaged}
+import net.wayfarerx.loremaster.composer.deployment.ComposerDeployment
+import zio.{Runtime, Task, ZManaged}
 import zio.console
 
 /**
  * A program that generates the AWS CloudFormation template.
  */
-object Main :
+object Main:
 
-  def main(args: Array[String]): Unit =
-    println(emitJson(twitter.TwitterEvent(model.Book(cats.data.NonEmptyList.one("TESTING")), java.time.Instant.now)))
-    Runtime.default.unsafeRunTask {
-      {
-        args.toList match
-          case Nil => ZManaged.succeed(System.out)
-          case file :: Nil => ZManaged.fromAutoCloseable(Task(PrintWriter(File(file), StandardCharsets.UTF_8.toString)))
-          case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
-      }.use { output =>
-        Task {
-          val deployment =
-            new twitter.deployment.TwitterDeployment {}
-          output.append(emitJson(obj(
-            "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
-            "Description" -> fromString(Messages.description),
-            "Parameters" -> fromFields(deployment.parameters),
-            "Resources" -> fromFields(deployment.resources)
-          )))
-        } catchAll { thrown =>
-          console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(thrown))
-        }
+  def main(args: Array[String]): Unit = Runtime.default.unsafeRunTask {
+    {
+      args.toList match
+        case Nil => ZManaged.succeed(System.out)
+        case file :: Nil => ZManaged.fromAutoCloseable(Task(PrintStream(File(file), StandardCharsets.UTF_8.toString)))
+        case _ => ZManaged.fail(IllegalArgumentException(Messages.usage))
+    } use { output =>
+      val deployment =
+        new ComposerDeployment
+          with twitter.deployment.TwitterDeployment
+      Task {
+        output.append(emit(obj(
+          "AWSTemplateFormatVersion" -> fromString("2010-09-09"),
+          "Description" -> fromString(Messages.description),
+          "Parameters" -> fromFields(deployment.parameters),
+          "Resources" -> fromFields(deployment.resources)
+        )))
       }
+    } catchAll {
+      case NonFatal(nonFatal) =>
+        console.putStrLnErr(Messages.failedToWriteAwsCloudFormationTemplate(nonFatal)) *> Task.fail(nonFatal)
+      case fatal =>
+        Task.die(fatal)
     }
+  }

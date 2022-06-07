@@ -1,7 +1,7 @@
 import Dependencies._
 
 ThisBuild / organization := "net.wayfarerx"
-ThisBuild / version := "0.1.4"
+ThisBuild / version := "0.1.5"
 ThisBuild / scalaVersion := Scala3Version
 ThisBuild / scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Ykind-projector:underscores")
 
@@ -14,8 +14,17 @@ lazy val Package = s"net.wayfarerx.$Application"
 /** The "core" string". */
 lazy val Core = "core"
 
-/** The "deployments" string". */
-lazy val Deployments = "deployments"
+/** The "aws" string". */
+lazy val Aws = "aws"
+
+/** The "nlp" string". */
+lazy val Nlp = "nlp"
+
+/** The "repository" string". */
+lazy val Repository = "repository"
+
+/** The "composer" string". */
+lazy val Composer = "composer"
 
 /** The "twitter" string". */
 lazy val Twitter = "twitter"
@@ -73,7 +82,10 @@ lazy val testSettings: Seq[Def.Setting[_]] = Seq(libraryDependencies ++= Seq(Sca
 /** The Loremaster project. */
 lazy val loremaster = project.in(file(".")).aggregate(
   core,
-  deployments,
+  nlp,
+  aws,
+  repository,
+  composer,
   twitter,
   main
 )
@@ -87,16 +99,22 @@ lazy val core = project.in(file(Core))
       CirceCore,
       CirceGeneric,
       CirceParser,
-      Twitter4JCore,
       Zio
     ),
     testSettings
   )
 
-/** The Loremaster deployments project. */
-lazy val deployments = project.in(file(Deployments))
+/** The Loremaster NLP project. */
+lazy val nlp = project.in(file(Nlp))
   .settings(
-    librarySettings(Deployments),
+    librarySettings(Nlp),
+    libraryDependencies += OpenNlpTools
+  ).dependsOn(core)
+
+/** The Loremaster AWS project. */
+lazy val aws = project.in(file(Aws))
+  .settings(
+    librarySettings(Aws),
     libraryDependencies ++= Seq(
       AwsLambdaCore,
       AwsLambdaEvents,
@@ -105,11 +123,25 @@ lazy val deployments = project.in(file(Deployments))
     testSettings
   ).dependsOn(core)
 
+/** The Loremaster repository project. */
+lazy val repository = project.in(file(Repository))
+  .settings(
+    librarySettings(Repository)
+  ).dependsOn(aws)
+
+/** The Loremaster composer project. */
+lazy val composer = project.in(file(Composer))
+  .enablePlugins(PublishToS3)
+  .settings(functionSettings(Composer))
+  .dependsOn(aws, nlp, repository)
+
 /** The Loremaster Twitter project. */
 lazy val twitter = project.in(file(Twitter))
   .enablePlugins(PublishToS3)
-  .settings(functionSettings(Twitter))
-  .dependsOn(core, deployments)
+  .settings(
+    functionSettings(Twitter),
+    libraryDependencies += Twitter4JCore
+  ).dependsOn(aws)
 
 /** The Loremaster main project. */
 lazy val main = project.in(file(Main))
@@ -121,4 +153,4 @@ lazy val main = project.in(file(Main))
     stackParameters := List("Version" -> version.value),
     shipFunctions := Def.unit(None),
     shipStack := deployStack.value
-  ).dependsOn(twitter)
+  ).dependsOn(composer, twitter)

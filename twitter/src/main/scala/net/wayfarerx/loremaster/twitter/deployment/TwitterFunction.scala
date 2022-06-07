@@ -14,22 +14,20 @@ package net.wayfarerx.loremaster
 package twitter
 package deployment
 
-import scala.concurrent.duration.FiniteDuration
-
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import zio.{Has, RIO, RLayer, ZLayer}
 
+import aws.*
 import configuration.*
-import deployments.*
 import event.*
 import logging.*
 
 /**
- * An AWS Kinesis Lambda function that posts books to Twitter,
+ * An AWS SQS Lambda function that posts books to Twitter.
  */
-final class TwitterFunction extends RequestHandler[SQSEvent, String] with SqsFunction[TwitterEvent] :
+final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandler[SQSEvent, String] :
 
   /* The type of environment to use. */
   override type Environment = AwsEnv & Has[TwitterService]
@@ -38,22 +36,12 @@ final class TwitterFunction extends RequestHandler[SQSEvent, String] with SqsFun
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
-        logFactory <- RIO.service[LogFactory]
-        log <- logFactory.log[TwitterService]
+        logging <- RIO.service[Logging]
         config <- RIO.service[Configuration]
+        log <- logging.log[TwitterService]
         retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
-        consumerKey <- config[String](TwitterConsumerKey)
-        consumerSecret <- config[String](TwitterConsumerSecret)
-        accessToken <- config[String](TwitterAccessToken)
-        accessTokenSecret <- config[String](TwitterAccessTokenSecret)
-        connectionTimeout <- config[FiniteDuration](TwitterConnectionTimeout)
-        queueName <- config[String](TwitterQueueName)
-      yield TwitterService(
-        log,
-        retryPolicy,
-        TwitterClient(consumerKey, consumerSecret, accessToken, accessTokenSecret, connectionTimeout),
-        SqsPublisher[TwitterEvent](queueName)
-      )
+        connection <- TwitterConnection.configure(config)
+      yield TwitterService(log, retryPolicy, connection, SqsPublisher[TwitterEvent])
     }
 
   /* Publish the specified book to Twitter. */

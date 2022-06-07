@@ -13,21 +13,11 @@
 package net.wayfarerx.loremaster
 package configuration
 
-import scala.util.control.NoStackTrace
-
 /**
- * The exception thrown when a configuration entry is not available.
+ * A problem raised by the configuration subsystem.
  *
- * @param _message The message that describes the problem.
- * @param cause    The throwable that caused this problem, defaults to none.
+ * @param message  The message that describes this problem.
+ * @param causedBy The throwable that caused this problem, defaults to none.
  */
-final class ConfigurationProblem(
-  _message: String,
-  val cause: Option[Throwable] = None
-) extends RuntimeException(_message) with NoStackTrace :
-
-  /** The message that describes this problem. */
-  def message: String = getMessage
-
-  /* Return the cause of this Twitter problem. */
-  override def getCause: Throwable = cause getOrElse super.getCause
+final class ConfigurationProblem(message: String, causedBy: Option[Throwable] = None)
+  extends Problem(message, causedBy)

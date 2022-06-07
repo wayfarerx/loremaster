@@ -29,21 +29,23 @@ import matchers.*
 class ConfigurationTest extends AnyFlatSpec with should.Matchers :
 
   "A configuration" should "return data from a source" in {
-    val config = Configuration {
-      case "boolean" => UIO.some("true")
-      case "byte" => UIO.some("1")
-      case "short" => UIO.some("2")
-      case "int" => UIO.some("3")
-      case "long" => UIO.some("4")
-      case "float" => UIO.some("5.1")
-      case "double" => UIO.some("6.2")
-      case "char" => UIO.some("a")
-      case "string" => UIO.some("str")
-      case "duration" => UIO.some("3min")
-      case "id" => UIO.some("id")
-      case "location" => UIO.some("the/location")
-      case _ => UIO.none
-    }
+    val config = new Configuration :
+      override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = {
+        key match
+          case "boolean" => UIO.some("true")
+          case "byte" => UIO.some("1")
+          case "short" => UIO.some("2")
+          case "int" => UIO.some("3")
+          case "long" => UIO.some("4")
+          case "float" => UIO.some("5.1")
+          case "double" => UIO.some("6.2")
+          case "char" => UIO.some("a")
+          case "string" => UIO.some("str")
+          case "duration" => UIO.some("3min")
+          case "id" => UIO.some("id")
+          case "location" => UIO.some("the/location")
+          case _ => UIO.none
+      } map (_ flatMap Configuration.Data[T])
     Runtime.default.unsafeRunTask {
       for
         boolean <- config[Boolean]("boolean")
@@ -88,7 +90,8 @@ class ConfigurationTest extends AnyFlatSpec with should.Matchers :
   }
 
   it.should("fail to return missing data") in {
-    val config = Configuration(_ => UIO.none)
+    val config = new Configuration :
+      override def get[T: Configuration.Data](key: String): ConfigurationEffect[Option[T]] = UIO.none
     assertThrows[ConfigurationProblem](Runtime.default.unsafeRunTask(config[Int]("int")))
     Runtime.default.unsafeRunTask(config.get[Int]("int")) shouldBe None
     Runtime.default.unsafeRunTask(config.getOrElse("int", 5)) shouldBe 5
