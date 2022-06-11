@@ -36,9 +36,8 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandle
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
-        logging <- RIO.service[Logging]
         config <- RIO.service[Configuration]
-        log <- logging.log[TwitterService]
+        log <- RIO.service[Logging] flatMap (_.log[TwitterService])
         retryPolicy <- config[RetryPolicy](TwitterRetryPolicy)
         connection <- TwitterConnection.configure(config)
       yield TwitterService(log, retryPolicy, connection, SqsPublisher[TwitterEvent])
@@ -46,4 +45,4 @@ final class TwitterFunction extends SqsFunction[TwitterEvent] with RequestHandle
 
   /* Publish the specified book to Twitter. */
   override protected def onMessage(event: TwitterEvent): RIO[Environment, Unit] =
-    RIO.service[TwitterService].flatMap(_ (event))
+    RIO.service[TwitterService] flatMap (_ (event))

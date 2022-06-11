@@ -15,30 +15,21 @@ package composer
 package deployment
 
 import aws.*
+import event.*
 
 trait ComposerDeployment extends Deployment :
 
-  override def parameters: Entries = super.parameters +
-    parameter(ComposerMemorySizeInMB, Messages.memorySize, DefaultMemorySizeInMB) +
-    parameter(ComposerTimeoutInSeconds, Messages.timeout, DefaultTimeoutInSeconds) +
-    parameter(ComposerRetryPolicy, Messages.retryPolicy, DefaultRetryPolicy) +
-    parameter(ComposerNlpDetokenizerDictionary, Messages.composerDetokenizerDictionary, "") +
-    parameter(ComposerEnabled, Messages.enabled, DefaultEnabled) +
-    parameter(ComposerBatchSize, Messages.batchSize, DefaultBatchSize) +
-    parameter(ComposerMaximumBatchingWindowInSeconds, Messages.maxBatchingWindow, DefaultMaximumBatchingWindowInSeconds)
+  override def parameters: Entries = super.parameters ++ sqsQueueDeliversToLambdaFunctionParameters(Composer) +
+    parameter(ComposerDetokenizerDictionary, Messages.detokenizerDictionary, "") +
+    parameter(ComposerRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
+    
 
   override def resources: Entries = super.resources ++
     sqsQueueDeliversToLambdaFunction[ComposerEvent, ComposerFunction](
       Messages.description,
-      Composer.toLowerCase,
-      ref(ComposerMemorySizeInMB),
-      ref(ComposerTimeoutInSeconds),
-      environment = Map(
-        ComposerRetryPolicy -> ref(ComposerRetryPolicy),
-        ComposerNlpDetokenizerDictionary -> ref(ComposerNlpDetokenizerDictionary)
-      ),
-      ref(ComposerEnabled),
-      ref(ComposerBatchSize),
-      ref(ComposerMaximumBatchingWindowInSeconds),
-      Domain -> Composer
+      Composer,
+      Map(
+        ComposerDetokenizerDictionary -> ref(ComposerDetokenizerDictionary),
+        ComposerRetryPolicy -> ref(ComposerRetryPolicy)
+      )
     )

@@ -34,28 +34,10 @@ def AwsEnv(context: Context): RLayer[ZEnv, AwsEnv] =
   ZLayer.requires[ZEnv] ++ config ++ logs
 
 /** AWS extensions to all events. */
-extension [T : ClassTag] (event: Event[T])
+extension [T : ClassTag] (* : Event[T])
 
   /** Returns the name of the SQS queue associated with the event. */
   def sqsQueueName: String = s"$Application${summon[ClassTag[T]].getClass.getSimpleName}Queue"
-
-/** The "2012-10-17" string. */
-inline def _2012_10_17 = "2012-10-17"
-
-/** The "Action" string. */
-inline def Action = "Action"
-
-/** The "Allow" string. */
-inline def Allow = "Allow"
-
-/** The "Arn" string. */
-inline def Arn = "Arn"
-
-/** The "AssumeRolePolicyDocument" string. */
-inline def AssumeRolePolicyDocument = "AssumeRolePolicyDocument"
-
-/** The "AWS" string. */
-inline def AWS = "AWS"
 
 /** The "BatchSize" string. */
 inline def BatchSize = "BatchSize"
@@ -66,17 +48,11 @@ inline def Code = "Code"
 /** The "Default" string. */
 inline def Default = "Default"
 
-/** The "DependsOn" string. */
-inline def DependsOn = "DependsOn"
-
 /** The "Description" string. */
 inline def Description = "Description"
 
 /** The "Domain" string. */
 inline def Domain = "Domain"
-
-/** The "Effect" string. */
-inline def Effect = "Effect"
 
 /** The "Enabled" string. */
 inline def Enabled = "Enabled"
@@ -93,38 +69,26 @@ inline def FunctionName = "FunctionName"
 /** The "Handler" string. */
 inline def Handler = "Handler"
 
+/** The "InMB" string. */
+inline def InMB = "InMB"
+
+/** The "InSeconds" string. */
+inline def InSeconds = "InSeconds"
+
 /** The "Key" string. */
 inline def Key = "Key"
 
-/** The "Lambda" string. */
-inline def Lambda = "Lambda"
+/** The "MaximumBatchingWindow" name. */
+inline def MaximumBatchingWindow: String = "MaximumBatchingWindow"
 
 /** The "MaximumBatchingWindowInSeconds" name. */
-inline def MaximumBatchingWindowInSeconds: String = "MaximumBatchingWindowInSeconds"
+inline def MaximumBatchingWindowInSeconds: String = s"$MaximumBatchingWindow$InSeconds"
 
 /** The "MemorySize" name. */
 inline def MemorySize: String = "MemorySize"
 
 /** The "MemorySizeInMB" name. */
-inline def MemorySizeInMB: String = s"${MemorySize}InMB"
-
-/** The "Number" string. */
-inline def Number = "Number"
-
-/** The "Policy" string. */
-inline def Policy = "Policy"
-
-/** The "Policies" string. */
-inline def Policies = "Policies"
-
-/** The "PolicyDocument" string. */
-inline def PolicyDocument = "PolicyDocument"
-
-/** The "PolicyName" string. */
-inline def PolicyName = "PolicyName"
-
-/** The "Principal" string. */
-inline def Principal = "Principal"
+inline def MemorySizeInMB: String = s"$MemorySize$InMB"
 
 /** The "Properties" string. */
 inline def Properties = "Properties"
@@ -132,32 +96,11 @@ inline def Properties = "Properties"
 /** The "QueueName" string. */
 inline def QueueName = "QueueName"
 
-/** The "Resource" string. */
-inline def Resource = "Resource"
-
 /** The "Role" string. */
 inline def Role = "Role"
 
-/** The "RoleName" string. */
-inline def RoleName = "RoleName"
-
 /** The "Runtime" string. */
 inline def Runtime = "Runtime"
-
-/** The "S3Bucket" name. */
-inline def S3Bucket: String = "S3Bucket"
-
-/** The "S3Key" name. */
-inline def S3Key: String = "S3Key"
-
-/** The "Service" string. */
-inline def Service = "Service"
-
-/** The "SQS" string. */
-inline def SQS = "SQS"
-
-/** The "Statement" string. */
-inline def Statement = "Statement"
 
 /** The "Tags" string. */
 inline def Tags = "Tags"
@@ -166,7 +109,7 @@ inline def Tags = "Tags"
 inline def Timeout: String = "Timeout"
 
 /** The "TimeoutInSeconds" name. */
-inline def TimeoutInSeconds: String = "TimeoutInSeconds"
+inline def TimeoutInSeconds: String = s"$Timeout$InSeconds"
 
 /** The "Type" string. */
 inline def Type = "Type"

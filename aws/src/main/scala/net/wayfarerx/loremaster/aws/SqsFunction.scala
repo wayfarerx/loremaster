@@ -21,7 +21,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import io.circe.Decoder
 
-import zio.{RIO, URIO}
+import zio.{Has, RIO, URIO}
 
 import logging.*
 
@@ -34,8 +34,8 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
   self: RequestHandler[SQSEvent, String] =>
 
   /* Process a SQS event. */
-  final override def apply(log: Log, event: SQSEvent): RIO[Environment, Unit] =
-    onMessages(log, event.getRecords.asScala.toList)
+  final override def apply(event: SQSEvent): RIO[Environment & Has[Log], Unit] =
+    onMessages(event.getRecords.asScala.toList)
 
   /**
    * Handles messages from the SQS queue.
@@ -43,16 +43,17 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
    * @param messages The messages to handle.
    * @return An effect that handles the specified messages.
    */
-  private def onMessages(log: Log, messages: List[SQSEvent.SQSMessage]): URIO[Environment, Unit] = messages match
+  private def onMessages(messages: List[SQSEvent.SQSMessage]): URIO[Environment & Has[Log], Unit] = messages match
     case head :: tail =>
       for
+        log <- RIO.service[Log]
         _ <- Option(head.getBody).filterNot(_.isEmpty).fold(URIO.unit) { message =>
           parse[T](message).fold(
             log.error(Messages.failedToParseSqsMessage(message), _),
             onMessage(_).catchAll(log.error(Messages.failedToDeliverSqsMessage(message), _))
           )
         }
-        _ <- onMessages(log, tail)
+        _ <- onMessages(tail)
       yield ()
     case Nil =>
       URIO.unit

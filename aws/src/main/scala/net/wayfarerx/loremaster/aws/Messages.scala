@@ -20,6 +20,21 @@ private object Messages {
 
   def okay: String = "200 OK"
 
+  def memorySizeInMB(domain: String): String =
+    s"The amount of memory afforded to the $Application $domain function in MB."
+
+  def timeoutInSeconds(domain: String): String =
+    s"The timeout enforced on the $Application $domain function in seconds."
+
+  def enabled(domain: String): String =
+    s"The $Application $domain enablement state."
+
+  def batchSize(domain: String): String =
+    s"The $Application $domain batch size."
+
+  def maximumBatchingWindowInSeconds(domain: String): String =
+    s"The $Application $domain maximum batching window in seconds."
+
   def version: String = s"The version of $Application to use."
 
   def unableToAccessConfigurationData(key: String): String =
