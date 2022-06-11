@@ -15,7 +15,7 @@ package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, LambdaLogger, RequestHandler}
 
-import zio.{RIO, RLayer, Task, ZLayer}
+import zio.{Has, RIO, RLayer, Task, ZLayer}
 
 import logging.*
 
@@ -82,5 +82,5 @@ object LambdaFunctionTest:
 
       override def environment: RLayer[AwsEnv, Environment] = ZLayer.identity
 
-      override def apply(log: Log, request: TestRequest): RIO[Environment, Unit] =
+      override def apply(request: TestRequest): RIO[Environment & Has[Log], Unit] =
         validate(request, TestRequest.Valid)

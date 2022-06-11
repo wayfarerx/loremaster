@@ -14,10 +14,7 @@ package net.wayfarerx.loremaster
 package twitter
 package deployment
 
-import scala.collection.immutable.ListMap
-import scala.language.implicitConversions
-
-import io.circe.Json
+import scala.concurrent.duration.*
 
 import aws.*
 import event.*
@@ -28,32 +25,22 @@ import event.*
 trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
-  override def parameters: Entries = super.parameters +
-    parameter(TwitterMemorySizeInMB, Messages.memorySize, DefaultMemorySizeInMB) +
-    parameter(TwitterTimeoutInSeconds, Messages.timeout, DefaultTimeoutInSeconds) +
-    parameter(TwitterConnectionTimeout, Messages.connectionTimeout, DefaultConnectionTimeout) +
-    parameter(TwitterRetryPolicy, Messages.retryPolicy, DefaultRetryPolicy) +
-    parameter(TwitterEnabled, Messages.enabled, DefaultEnabled) +
-    parameter(TwitterBatchSize, Messages.batchSize, DefaultBatchSize) +
-    parameter(TwitterMaximumBatchingWindowInSeconds, Messages.maxBatchingWindow, DefaultMaximumBatchingWindowInSeconds)
+  override def parameters: Entries = super.parameters ++ sqsQueueDeliversToLambdaFunctionParameters(Twitter) +
+    parameter(TwitterConnectionTimeout, Messages.connectionTimeout, 5.seconds) +
+    parameter(TwitterRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
+    
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++
     sqsQueueDeliversToLambdaFunction[TwitterEvent, TwitterFunction](
       Messages.description,
-      Twitter.toLowerCase,
-      ref(TwitterMemorySizeInMB),
-      ref(TwitterTimeoutInSeconds),
-      environment = Map(
-        TwitterRetryPolicy -> ref(TwitterRetryPolicy),
+      Twitter,
+      Map(
         TwitterConsumerKey -> resolveSecret(TwitterConsumerKey),
         TwitterConsumerSecret -> resolveSecret(TwitterConsumerSecret),
         TwitterAccessToken -> resolveSecret(TwitterAccessToken),
         TwitterAccessTokenSecret -> resolveSecret(TwitterAccessTokenSecret),
-        TwitterConnectionTimeout -> ref(TwitterConnectionTimeout)
-      ),
-      ref(TwitterEnabled),
-      ref(TwitterBatchSize),
-      ref(TwitterMaximumBatchingWindowInSeconds),
-      Domain -> Twitter
+        TwitterConnectionTimeout -> ref(TwitterConnectionTimeout),
+        TwitterRetryPolicy -> ref(TwitterRetryPolicy)
+      )
     )

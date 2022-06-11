@@ -18,8 +18,7 @@ import scala.concurrent.duration.*
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
-import io.circe.Json.{arr, fromString, obj}
-import io.circe.{Encoder, Json}
+import io.circe.Json
 
 import event.*
 
@@ -27,6 +26,8 @@ import event.*
  * Base type for participants in the deployment process.
  */
 trait Deployment:
+
+  // Given Conversions
 
   /** The given conversion of integers to JSON integers. */
   protected final given Conversion[Int, Json] = Json.fromInt
@@ -62,12 +63,6 @@ trait Deployment:
   /** The default timeout for Lambda functions in seconds. */
   protected final def DefaultTimeoutInSeconds: Long = 15.minutes.toSeconds
 
-  /** The default timeout for external connections. */
-  protected final def DefaultConnectionTimeout: FiniteDuration = 5.seconds
-
-  /** The default retry policy for failed events. */
-  protected final def DefaultRetryPolicy: RetryPolicy = RetryPolicy.Default
-
   /** The default enablement state for function mappings. */
   protected final def DefaultEnabled: Boolean = true
 
@@ -89,7 +84,18 @@ trait Deployment:
    * @return The S3 key for the specified Lambda function domain.
    */
   protected final def lambdaS3Key(domain: String): Json =
-    join("", s"$domain/${Application.toLowerCase}-$domain-", ref(Version), ".jar")
+    val domainLowerCase = domain.toLowerCase
+    join(
+      "",
+      domainLowerCase,
+      "/",
+      Application.toLowerCase,
+      "-",
+      domainLowerCase,
+      "-",
+      ref(Version),
+      ".jar"
+    )
 
   /** Returns the simple name of the specified class.
    *
@@ -159,7 +165,7 @@ trait Deployment:
    * @return JSON that joins the supplied values using the specified delimiter.
    */
   protected final def join(delimiter: String, values: Json*): Json =
-    obj("Fn::Join" -> arr(delimiter, arr(values *)))
+    Json.obj("Fn::Join" -> Json.arr(delimiter, Json.arr(values *)))
 
   /**
    * Generates JSON that resolves the specified reference.
@@ -168,7 +174,7 @@ trait Deployment:
    * @return JSON that resolves the specified reference.
    */
   protected final def ref(target: String): Json =
-    obj("Ref" -> target)
+    Json.obj("Ref" -> target)
 
   /**
    * Generates JSON that resolves the specified SecretsManager key.
@@ -177,7 +183,7 @@ trait Deployment:
    * @return JSON that resolves the specified SecretsManager key.
    */
   protected final def resolveSecret(key: String): Json =
-    fromString(s"{{resolve:secretsmanager:$Application:SecretString:$key}}")
+    Json.fromString(s"{{resolve:secretsmanager:$Application:SecretString:$key}}")
 
   // Parameters
 
@@ -214,9 +220,27 @@ trait Deployment:
    * @return A string parameter definition.
    */
   protected final def parameter[T: Parameter](name: String, description: String, default: Option[T] = None): Entry =
-    val _parameter = Parameter[T]
-    val basic = ListMap(Type -> Json.fromString(_parameter._type), Description -> Json.fromString(description))
-    name -> obj(default.map(_parameter).fold(basic)(_default => basic + (Default -> Json.fromString(_default))).toSeq *)
+    val parameter = Parameter[T]
+    val basic = Entries(Type -> Json.fromString(parameter._type), Description -> Json.fromString(description))
+    name -> Json.obj(default.map(parameter).fold(basic)(_default => basic + (Default -> Json.fromString(_default))).toSeq *)
+
+  /**
+   * Generates the SQS to Lambda parameter definitions for the specified domain.
+   *
+   * @param domain The domain to generate the SQS to Lambda parameter definitions for.
+   * @return The SQS to Lambda parameter definitions for the specified domain.
+   */
+  protected final def sqsQueueDeliversToLambdaFunctionParameters(domain: String): Entries = Entries(
+    parameter(s"$domain$MemorySizeInMB", Messages.memorySizeInMB(domain), DefaultMemorySizeInMB),
+    parameter(s"$domain$TimeoutInSeconds", Messages.timeoutInSeconds(domain), DefaultTimeoutInSeconds),
+    parameter(s"$domain$Enabled", Messages.enabled(domain), DefaultEnabled),
+    parameter(s"$domain$BatchSize", Messages.batchSize(domain), DefaultBatchSize),
+    parameter(
+      s"$domain$MaximumBatchingWindowInSeconds",
+      Messages.maximumBatchingWindowInSeconds(domain),
+      DefaultMaximumBatchingWindowInSeconds
+    )
+  )
 
   // Factories
 
@@ -231,9 +255,9 @@ trait Deployment:
   private final def sqsQueue[T: ClassTag](visibilityTimeout: Json, tags: Tag*): Entries =
     val queueName = sqsQueueName[T]
     Entries(
-      queueName -> obj(
+      queueName -> Json.obj(
         Type -> "AWS::SQS::Queue",
-        Properties -> obj(
+        Properties -> Json.obj(
           QueueName -> queueName,
           VisibilityTimeout -> visibilityTimeout,
           tagging[T](tags *)
@@ -267,22 +291,22 @@ trait Deployment:
   ): Entries =
     val functionName = lambdaFunctionName[T]
     Entries(
-      functionName -> obj(
+      functionName -> Json.obj(
         Type -> "AWS::Lambda::Function",
-        Properties -> obj(
+        Properties -> Json.obj(
           FunctionName -> functionName,
           Description -> description,
           Runtime -> "java11",
-          Code -> obj("S3Bucket" -> s3Bucket, "S3Key" -> s3Key),
+          Code -> Json.obj("S3Bucket" -> s3Bucket, "S3Key" -> s3Key),
           Handler -> handler,
           MemorySize -> memorySize,
           Timeout -> timeout,
           Role -> join("",
             "arn:aws:iam::",
             ref("AWS::AccountId"),
-            ":role/LoremasterLambdaIAMRole"
+            s":role/${Application}LambdaIAMRole"
           ),
-          Environment -> obj(Variables -> obj(environment.toSeq *)),
+          Environment -> Json.obj(Variables -> Json.obj(environment.toSeq *)),
           tagging[T](tags *)
         )
       )
@@ -304,9 +328,9 @@ trait Deployment:
   ): Entries =
     val functionName = lambdaFunctionName[T]
     Entries(
-      eventSourceMappingName[T] -> obj(
+      eventSourceMappingName[T] -> Json.obj(
         Type -> "AWS::Lambda::EventSourceMapping",
-        Properties -> obj(
+        Properties -> Json.obj(
           Enabled -> enabled,
           BatchSize -> batchSize,
           MaximumBatchingWindowInSeconds -> maximumBatchingWindowInSeconds,
@@ -325,8 +349,8 @@ trait Deployment:
    * @return The specified event and supplemental tags as a tag entry.
    */
   private final def tagging[T: ClassTag](tags: Tag*): Entry =
-    Tags -> arr((("Application" -> Application) +: ("Event" -> name[T]) +: tags).map {
-      case (key, value) => obj(Key -> fromString(key), Value -> fromString(value))
+    Tags -> Json.arr((("Application" -> Application) +: ("Event" -> name[T]) +: tags).map {
+      case (key, value) => Json.obj(Key -> Json.fromString(key), Value -> Json.fromString(value))
     } *)
 
   /**
@@ -334,51 +358,42 @@ trait Deployment:
    *
    * @tparam T The type of SQS messages to handle.
    * @tparam F The type of the function handler implementation.
-   * @param domain                         The domain that contains the function.
-   * @param description                    The description of the function.
-   * @param memorySize                     The amount of memory available to the function in MB.
-   * @param timeout                        The amount of time the function can run in seconds.
-   * @param environment                    The environment that the function executes in.
-   * @param enabled                        The enablement state of the mapping.
-   * @param batchSize                      The batch size of the mapping.
-   * @param maximumBatchingWindowInSeconds The maximum batching window of the mapping.
-   * @param tags                           The tags to apply.
+   * @param description The description of the function.
+   * @param domain      The domain of the function.
+   * @param environment The environment that the function executes in.
+   * @param tags        The tags to apply.
    * @return A handler for SQS messages of type `T` with a Lambda function of type `F`.
    */
   protected final def sqsQueueDeliversToLambdaFunction[T: ClassTag, F: ClassTag](
     description: String,
     domain: String,
-    memorySize: Json,
-    timeout: Json,
     environment: Map[String, Json],
-    enabled: Json,
-    batchSize: Json,
-    maximumBatchingWindowInSeconds: Json,
     tags: Tag*
   ): Entries =
+    val timeout = ref(s"$domain$TimeoutInSeconds")
+    val allTags = (Domain, domain) +: tags
     sqsQueue[T](
       timeout,
-      tags *
+      allTags *
     ) ++ lambdaFunction[T](
       description,
       lambdaS3Bucket,
       lambdaS3Key(domain),
       fullName[F],
-      memorySize,
+      ref(s"$domain$MemorySizeInMB"),
       timeout,
       environment,
-      tags *
+      allTags *
     ) ++ sqsToLambdaMapping[T](
-      enabled,
-      batchSize,
-      maximumBatchingWindowInSeconds
+      ref(s"$domain$Enabled"),
+      ref(s"$domain$BatchSize"),
+      ref(s"$domain$MaximumBatchingWindowInSeconds")
     )
 
   // Implementation
 
   /** Generates the parameters required by this deployment. */
-  def parameters: Entries = Entries.empty +
-    parameter[String](Version, Messages.version)
+  def parameters: Entries = Entries(parameter[String](Version, Messages.version))
 
   /** Generates the resources provided by this deployment. */
   def resources: Entries = Entries.empty

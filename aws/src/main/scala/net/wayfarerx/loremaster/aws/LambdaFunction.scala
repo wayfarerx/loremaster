@@ -15,7 +15,7 @@ package aws
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 
-import zio.{RIO, RLayer, Runtime, UIO, ZEnv, ZLayer}
+import zio.{Has, RIO, RLayer, Runtime, ZLayer}
 
 import logging.*
 
@@ -40,18 +40,14 @@ trait LambdaFunction[T]:
   /**
    * Handles a Lambda request with the provided environment.
    *
-   * @param log     The log to use.
    * @param request The request to handle.
    * @return The environment-dependant request handler.
    */
-  def apply(log: Log, request: T): RIO[Environment, Unit]
+  def apply(request: T): RIO[Environment & Has[Log], Unit]
 
   /* Handle a Lambda request. */
   final override def handleRequest(request: T, context: Context): String =
-    Runtime.default unsafeRunTask {
-      for
-        logging <- RIO.service[Logging]
-        log <- logging(getClass)
-        _ <- apply(log, request)
-      yield Messages.okay
-    }.provideLayer(AwsEnv(context) >>> environment)
+    Runtime.default unsafeRunTask apply(request).map(_ => Messages.okay).provideLayer {
+      val aws = AwsEnv(context)
+      aws >>> environment ++ (aws >>> ZLayer.fromEffect(RIO.service[Logging] flatMap (_ (getClass))))
+    }

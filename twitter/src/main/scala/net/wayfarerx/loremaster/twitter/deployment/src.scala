@@ -19,12 +19,6 @@ import aws.*
 /** The "Twitter" prefix. */
 private inline def Twitter = "Twitter"
 
-/** The Twitter memory size variable name. */
-inline def TwitterMemorySizeInMB = s"$Twitter$MemorySizeInMB"
-
-/** The Twitter timeout variable name. */
-inline def TwitterTimeoutInSeconds = s"$Twitter$TimeoutInSeconds"
-
 /** The Twitter consumer key variable name. */
 inline def TwitterConsumerKey: String = s"${Twitter}ConsumerKey"
 
@@ -42,12 +36,3 @@ inline def TwitterConnectionTimeout: String = s"${Twitter}ConnectionTimeout"
 
 /** The Twitter retry policy variable name. */
 inline def TwitterRetryPolicy = s"${Twitter}RetryPolicy"
-
-/** The Twitter enablement variable name. */
-inline def TwitterEnabled = s"${Twitter}Enabled"
-
-/** The Twitter batch size variable name. */
-inline def TwitterBatchSize = s"${Twitter}BatchSize"
-
-/** The Twitter maximum batching window variable name. */
-inline def TwitterMaximumBatchingWindowInSeconds = s"${Twitter}MaximumBatchingWindowInSeconds"

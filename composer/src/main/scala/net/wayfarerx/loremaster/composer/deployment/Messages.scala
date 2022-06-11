@@ -18,16 +18,6 @@ private object Messages:
 
   def description: String = s"The function that handles $Application $Composer events."
 
-  def memorySize: String = s"The amount of memory afforded to the $Application $Composer function in MB."
-
-  def timeout: String = s"The timeout applied to the $Application $Composer function in seconds."
+  def detokenizerDictionary: String = s"The $Application $Composer NLP detokenizer dictionary URI."
 
   def retryPolicy: String = s"The $Application $Composer retry policy."
-
-  def composerDetokenizerDictionary: String = s"The $Application $Composer NLP detokenizer dictionary URI."
-
-  def enabled: String = s"The $Application $Composer enablement state."
-
-  def batchSize: String = s"The $Application $Composer batch size."
-
-  def maxBatchingWindow: String = s"The $Application $Composer maximum batching window in seconds."

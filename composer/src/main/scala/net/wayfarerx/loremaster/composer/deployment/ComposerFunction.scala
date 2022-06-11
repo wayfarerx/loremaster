@@ -47,7 +47,7 @@ final class ComposerFunction extends SqsFunction[ComposerEvent] with RequestHand
         retryPolicy <- config[RetryPolicy](ComposerRetryPolicy)
         repository <- UIO(MockRepository) // FIXME Use a real repository.
         rng <- RIO.service[Random.Service]
-        renderer <- OpenNlpRenderer.configure(ComposerNlpDetokenizerDictionary, config)
+        renderer <- OpenNlpRenderer.configure(ComposerDetokenizerDictionary, config)
       yield ComposerService(
         log,
         retryPolicy,

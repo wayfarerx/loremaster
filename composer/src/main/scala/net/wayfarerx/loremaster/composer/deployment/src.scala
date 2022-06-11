@@ -19,23 +19,8 @@ import aws.*
 /** The "Composer" prefix. */
 private inline def Composer = "Composer"
 
-/** The Twitter memory size variable name. */
-inline def ComposerMemorySizeInMB = s"$Composer$MemorySizeInMB"
-
-/** The Twitter timeout variable name. */
-inline def ComposerTimeoutInSeconds = s"$Composer$TimeoutInSeconds"
+/** The composer NLP detokenizer dictionary variable name. */
+inline def ComposerDetokenizerDictionary = s"${Composer}DetokenizerDictionary"
 
 /** The composer retry policy variable name. */
 inline def ComposerRetryPolicy = s"${Composer}RetryPolicy"
-
-/** The composer NLP detokenizer dictionary variable name. */
-inline def ComposerNlpDetokenizerDictionary = s"${Composer}NlpDetokenizerDictionary"
-
-/** The Twitter enablement variable name. */
-inline def ComposerEnabled = s"${Composer}Enabled"
-
-/** The Twitter batch size variable name. */
-inline def ComposerBatchSize = s"${Composer}BatchSize"
-
-/** The Twitter maximum batching window variable name. */
-inline def ComposerMaximumBatchingWindowInSeconds = s"${Composer}MaximumBatchingWindowInSeconds"
