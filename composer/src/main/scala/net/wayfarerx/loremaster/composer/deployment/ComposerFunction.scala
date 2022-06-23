@@ -32,23 +32,23 @@ import repository.deployment.MockRepository
 /**
  * An AWS SQS Lambda function that composes books.
  */
-final class ComposerFunction extends SqsFunction[ComposerEvent] with RequestHandler[SQSEvent, String] :
+final class ComposerFunction extends SqsFunction[ComposerEvent] :
 
   /* The type of environment to use. */
-  override type Environment = AwsEnv & Has[ComposerService]
+  override type Environment = AwsEnv & Has[ComposerEventHandler]
 
   /* The environment constructor to use. */
   override def environment: RLayer[AwsEnv, Environment] =
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect {
       for
         logging <- RIO.service[Logging]
-        log <- logging.log[ComposerService]
+        log <- logging.log[ComposerEventHandler]
         config <- RIO.service[Configuration]
         retryPolicy <- config[RetryPolicy](ComposerRetryPolicy)
         repository <- UIO(MockRepository) // FIXME Use a real repository.
         rng <- RIO.service[Random.Service]
         renderer <- OpenNlpRenderer.configure(ComposerDetokenizerDictionary, config)
-      yield ComposerService(
+      yield ComposerEventHandler(
         log,
         retryPolicy,
         repository,
@@ -60,5 +60,5 @@ final class ComposerFunction extends SqsFunction[ComposerEvent] with RequestHand
     }
 
   /* Compose the specified book. */
-  override protected def onMessage(event: ComposerEvent): RIO[Environment, Unit] =
-    RIO.service[ComposerService].flatMap(_ (event))
+  override protected def onMessage(event: ComposerEvent): RIO[EnvironmentWithLog, Unit] =
+    RIO.service[ComposerEventHandler].flatMap(_ (event))

@@ -19,14 +19,19 @@ import event.*
 
 trait ComposerDeployment extends Deployment :
 
-  override def parameters: Entries = super.parameters ++ sqsQueueDeliversToLambdaFunctionParameters(Composer) +
+  override def parameters: Entries = super.parameters ++
+    scheduledLambdaFunctionParameters(Composer) ++
+    sqsQueueDeliversToLambdaFunctionParameters(Composer) +
     parameter(ComposerDetokenizerDictionary, Messages.detokenizerDictionary, "") +
     parameter(ComposerRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
-    
 
   override def resources: Entries = super.resources ++
+    scheduledLambdaFunction[ComposerScheduler](
+      Messages.scheduleDescription,
+      Composer
+    ) ++
     sqsQueueDeliversToLambdaFunction[ComposerEvent, ComposerFunction](
-      Messages.description,
+      Messages.functionDescription,
       Composer,
       Map(
         ComposerDetokenizerDictionary -> ref(ComposerDetokenizerDictionary),

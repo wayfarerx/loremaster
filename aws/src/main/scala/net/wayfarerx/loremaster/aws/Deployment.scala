@@ -13,6 +13,8 @@
 package net.wayfarerx.loremaster
 package aws
 
+import java.util.{Map => JMap}
+
 import scala.collection.immutable.ListMap
 import scala.concurrent.duration.*
 import scala.language.implicitConversions
@@ -75,7 +77,8 @@ trait Deployment:
   // Names
 
   /** The name of the S3 bucket that stores the Lambda functions. */
-  protected final def lambdaS3Bucket: String = s"${Application.toLowerCase}-lambda-functions"
+  protected final def lambdaS3Bucket: String =
+    s"${Application.toLowerCase}-lambda-functions"
 
   /**
    * Generates the S3 key for the specified Lambda function domain.
@@ -102,7 +105,8 @@ trait Deployment:
    * @tparam T The type of class to return the simple name of.
    * @return The simple name of the specified class.
    */
-  protected final def name[T: ClassTag]: String = summon[ClassTag[T]].runtimeClass.getSimpleName
+  protected final def name[T: ClassTag]: String =
+    summon[ClassTag[T]].runtimeClass.getSimpleName
 
   /**
    * Returns the full name of the specified class.
@@ -110,7 +114,8 @@ trait Deployment:
    * @tparam T The type of class to return the full name of.
    * @return The full name of the specified class.
    */
-  protected final def fullName[T: ClassTag]: String = summon[ClassTag[T]].runtimeClass.getName
+  protected final def fullName[T: ClassTag]: String =
+    summon[ClassTag[T]].runtimeClass.getName
 
   /**
    * Generates the name of the SQS queue associated with the specified type.
@@ -138,6 +143,60 @@ trait Deployment:
    */
   protected final def eventSourceMappingName[T: ClassTag]: String =
     s"$Application${name[T]}SourceMapping"
+
+  /**
+   * Returns the batch size parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The batch size parameter name for the specified domain.
+   */
+  protected final def batchSizeName(domain: String): String =
+    s"$domain$BatchSize"
+
+  /**
+   * Returns the enabled parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The enabled parameter name for the specified domain.
+   */
+  protected final def enabledName(domain: String): String =
+    s"$domain$Enabled"
+
+  /**
+   * Returns the maximum batching window parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The maximum batching window parameter name for the specified domain.
+   */
+  protected final def maximumBatchingWindowInSecondsName(domain: String): String =
+    s"$domain$MaximumBatchingWindowInSeconds"
+
+  /**
+   * Returns the memory size parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The memory size parameter name for the specified domain.
+   */
+  protected final def memorySizeInMBName(domain: String): String =
+    s"$domain$MemorySizeInMB"
+
+  /**
+   * Returns the timeout parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The timeout parameter name for the specified domain.
+   */
+  protected final def timeoutInSecondsName(domain: String): String =
+    s"$domain$TimeoutInSeconds"
+
+  /**
+   * Returns the scheduled parameter name for the specified domain.
+   *
+   * @param domain The name of the domain.
+   * @return The scheduled parameter name for the specified domain.
+   */
+  protected def scheduledName(domain: String): String =
+    s"$Scheduled$domain"
 
   /**
    * Returns the ARN for the specified service and name.
@@ -222,7 +281,22 @@ trait Deployment:
   protected final def parameter[T: Parameter](name: String, description: String, default: Option[T] = None): Entry =
     val parameter = Parameter[T]
     val basic = Entries(Type -> Json.fromString(parameter._type), Description -> Json.fromString(description))
-    name -> Json.obj(default.map(parameter).fold(basic)(_default => basic + (Default -> Json.fromString(_default))).toSeq *)
+    name -> Json.obj(default.map(parameter).fold(basic) {
+      _default => basic + (Default -> Json.fromString(_default))
+    }.toSeq *)
+
+  /**
+   * Generates the scheduled Lambda parameter definitions for the specified domain.
+   *
+   * @param domain The domain to generate the scheduled Lambda parameter definitions for.
+   * @return The scheduled Lambda parameter definitions for the specified domain.
+   */
+  protected final def scheduledLambdaFunctionParameters(domain: String): Entries =
+    val scheduled = scheduledName(domain)
+    Entries(
+      parameter(memorySizeInMBName(scheduled), Messages.memorySizeInMB(scheduled), DefaultMemorySizeInMB),
+      parameter(timeoutInSecondsName(scheduled), Messages.timeoutInSeconds(scheduled), DefaultTimeoutInSeconds)
+    )
 
   /**
    * Generates the SQS to Lambda parameter definitions for the specified domain.
@@ -231,12 +305,12 @@ trait Deployment:
    * @return The SQS to Lambda parameter definitions for the specified domain.
    */
   protected final def sqsQueueDeliversToLambdaFunctionParameters(domain: String): Entries = Entries(
-    parameter(s"$domain$MemorySizeInMB", Messages.memorySizeInMB(domain), DefaultMemorySizeInMB),
-    parameter(s"$domain$TimeoutInSeconds", Messages.timeoutInSeconds(domain), DefaultTimeoutInSeconds),
-    parameter(s"$domain$Enabled", Messages.enabled(domain), DefaultEnabled),
-    parameter(s"$domain$BatchSize", Messages.batchSize(domain), DefaultBatchSize),
+    parameter(memorySizeInMBName(domain), Messages.memorySizeInMB(domain), DefaultMemorySizeInMB),
+    parameter(timeoutInSecondsName(domain), Messages.timeoutInSeconds(domain), DefaultTimeoutInSeconds),
+    parameter(enabledName(domain), Messages.enabled(domain), DefaultEnabled),
+    parameter(batchSizeName(domain), Messages.batchSize(domain), DefaultBatchSize),
     parameter(
-      s"$domain$MaximumBatchingWindowInSeconds",
+      maximumBatchingWindowInSecondsName(domain),
       Messages.maximumBatchingWindowInSeconds(domain),
       DefaultMaximumBatchingWindowInSeconds
     )
@@ -341,6 +415,18 @@ trait Deployment:
       )
     )
 
+  private final def scheduleRule(domain: String, description: String) = Entries(
+    scheduledName(domain) -> Json.obj(
+      Type -> "AWS::Events::Rule",
+      Properties -> Json.obj(
+        Description -> description,
+        "ScheduleExpression" -> ref("ScheduleExpression"),
+        "State" -> ref("State"),
+        "Targets" -> ref("Targets")
+      )
+    )
+  )
+
   /**
    * Returns the specified event and supplemental tags as a tag entry.
    *
@@ -354,9 +440,37 @@ trait Deployment:
     } *)
 
   /**
-   * Generates a handler for SQS messages of type `T` with a Lambda function of type `F`.
+   * Generates a handler for scheduled invocations with a Lambda function of type `F`.
    *
-   * @tparam T The type of SQS messages to handle.
+   * @tparam F The type of the function handler implementation.
+   * @param description The description of the function.
+   * @param domain      The domain of the function.
+   * @param environment The environment that the function executes in.
+   * @param tags        The tags to apply.
+   * @return A handler for scheduled invocations with a Lambda function of type `F`..
+   */
+  protected final def scheduledLambdaFunction[F: ClassTag](
+    description: String,
+    domain: String,
+    environment: Map[String, Json] = Map(),
+    tags: Tag*
+  ): Entries =
+    val scheduled = scheduledName(domain)
+    lambdaFunction[JMap[String, String]](
+      description,
+      lambdaS3Bucket,
+      lambdaS3Key(domain),
+      fullName[F],
+      ref(memorySizeInMBName(scheduled)),
+      ref(timeoutInSecondsName(scheduled)),
+      environment,
+      (Domain, domain) +: tags *
+    ) ++ scheduleRule(scheduled, "")
+
+  /**
+   * Generates a handler for SQS messages of type `E` with a Lambda function of type `F`.
+   *
+   * @tparam E The type of SQS events to handle.
    * @tparam F The type of the function handler implementation.
    * @param description The description of the function.
    * @param domain      The domain of the function.
@@ -364,30 +478,30 @@ trait Deployment:
    * @param tags        The tags to apply.
    * @return A handler for SQS messages of type `T` with a Lambda function of type `F`.
    */
-  protected final def sqsQueueDeliversToLambdaFunction[T: ClassTag, F: ClassTag](
+  protected final def sqsQueueDeliversToLambdaFunction[E: ClassTag, F: ClassTag](
     description: String,
     domain: String,
-    environment: Map[String, Json],
+    environment: Map[String, Json] = Map(),
     tags: Tag*
   ): Entries =
-    val timeout = ref(s"$domain$TimeoutInSeconds")
-    val allTags = (Domain, domain) +: tags
-    sqsQueue[T](
+    val timeout = ref(timeoutInSecondsName(domain))
+    val _tags = (Domain, domain) +: tags
+    sqsQueue[E](
       timeout,
-      allTags *
-    ) ++ lambdaFunction[T](
+      _tags *
+    ) ++ lambdaFunction[E](
       description,
       lambdaS3Bucket,
       lambdaS3Key(domain),
       fullName[F],
-      ref(s"$domain$MemorySizeInMB"),
+      ref(memorySizeInMBName(domain)),
       timeout,
       environment,
-      allTags *
-    ) ++ sqsToLambdaMapping[T](
-      ref(s"$domain$Enabled"),
-      ref(s"$domain$BatchSize"),
-      ref(s"$domain$MaximumBatchingWindowInSeconds")
+      _tags *
+    ) ++ sqsToLambdaMapping[E](
+      ref(enabledName(domain)),
+      ref(batchSizeName(domain)),
+      ref(maximumBatchingWindowInSecondsName(domain))
     )
 
   // Implementation

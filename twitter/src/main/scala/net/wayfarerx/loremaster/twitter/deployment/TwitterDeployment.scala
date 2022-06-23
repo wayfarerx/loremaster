@@ -25,10 +25,11 @@ import event.*
 trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
-  override def parameters: Entries = super.parameters ++ sqsQueueDeliversToLambdaFunctionParameters(Twitter) +
+  override def parameters: Entries = super.parameters ++
+    sqsQueueDeliversToLambdaFunctionParameters(Twitter) +
     parameter(TwitterConnectionTimeout, Messages.connectionTimeout, 5.seconds) +
     parameter(TwitterRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
-    
+
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++

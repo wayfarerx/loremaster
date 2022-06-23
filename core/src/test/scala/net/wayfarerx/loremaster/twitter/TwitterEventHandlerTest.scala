@@ -35,7 +35,7 @@ import org.scalatestplus.mockito.MockitoSugar
 /**
  * Test case for the Twitter service.
  */
-class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
+class TwitterEventHandlerTest extends AnyFlatSpec with should.Matchers with MockitoSugar :
 
   /** A test Twitter event. */
   private val testEvent = TwitterEvent(Book.of("A", "B"))
@@ -45,7 +45,7 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     val publisher = mock[Publisher[TwitterEvent]]
     when(client.postTweet(testEvent.book)) thenReturn IO.unit
     Runtime.default.unsafeRunTask {
-      TwitterService(Log.NoOp, event.RetryPolicy.Default, client, publisher).apply(testEvent)
+      TwitterEventHandler(Log.NoOp, event.RetryPolicy.Default, client, publisher).apply(testEvent)
     } shouldBe()
     verify(client).postTweet(testEvent.book)
     verifyNoInteractions(publisher)
@@ -58,7 +58,7 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     when(client.postTweet(testEvent.book)) thenReturn IO.fail(problem)
     when(publisher.apply(Event[TwitterEvent].nextAttempt(testEvent), RetryPolicy.Backoff.Default(testEvent))) thenReturn Task.unit
     Runtime.default.unsafeRunTask {
-      TwitterService(Log.NoOp, RetryPolicy.Default, client, publisher).apply(testEvent)
+      TwitterEventHandler(Log.NoOp, RetryPolicy.Default, client, publisher).apply(testEvent)
     } shouldBe()
     verify(client).postTweet(testEvent.book)
     verify(publisher).apply(Event[TwitterEvent].nextAttempt(testEvent), RetryPolicy.Backoff.Default(testEvent))
@@ -71,7 +71,7 @@ class TwitterServiceTest extends AnyFlatSpec with should.Matchers with MockitoSu
     val problem = TwitterProblem("PROBLEM", Some(RuntimeException()))
     when(client.postTweet(testEvent.book)) thenReturn IO.fail(problem)
     Runtime.default.unsafeRunTask {
-      TwitterService(Log.NoOp, retryPolicy, client, publisher)(testEvent) catchSome {
+      TwitterEventHandler(Log.NoOp, retryPolicy, client, publisher)(testEvent) catchSome {
         case _problem if _problem == problem => Task.unit
       }
     } shouldBe()

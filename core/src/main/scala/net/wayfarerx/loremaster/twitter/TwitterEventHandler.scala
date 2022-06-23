@@ -1,4 +1,4 @@
-/* TwitterService.scala
+/* TwitterEventHandler.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -19,14 +19,14 @@ import event.*
 import logging.*
 
 /**
- * Definition of the Twitter service.
+ * Definition of the Twitter event handler.
  *
  * @param log         The log to use.
  * @param retryPolicy The retry policy to use.
  * @param client      The Twitter client to use.
  * @param fallback    The Twitter event publisher to retry with.
  */
-final class TwitterService(
+final class TwitterEventHandler(
   log: Log,
   retryPolicy: RetryPolicy,
   client: TwitterClient,
@@ -40,7 +40,7 @@ final class TwitterService(
     case problem if problem.shouldRetry =>
       retryPolicy(event).fold(IO.fail(problem)) { backoff =>
         log.warn(Messages.retryingTweet(event, backoff)) *>
-          fallback(Event[TwitterEvent].nextAttempt(event), backoff) catchAll { thrown =>
+          fallback(event.copy(retry = Some(event.retry.fold(1)(Math.max(0, _) + 1))), backoff) catchAll { thrown =>
           IO.fail(TwitterProblem(Messages.failedToRetryTweet(event), Option(thrown)))
         }
       }

@@ -16,7 +16,9 @@ package deployment
 
 private object Messages:
 
-  def description: String = s"The function that handles $Application $Composer events."
+  def scheduleDescription: String = s"The function that schedules $Application $Composer events."
+
+  def functionDescription: String = s"The function that handles $Application $Composer events."
 
   def detokenizerDictionary: String = s"The $Application $Composer NLP detokenizer dictionary URI."
 

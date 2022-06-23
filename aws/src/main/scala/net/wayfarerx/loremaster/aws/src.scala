@@ -28,15 +28,23 @@ import logging.*
 type AwsEnv = ZEnv & Has[Configuration] & Has[Logging]
 
 /** Factory for AWS environments. */
-def AwsEnv(context: Context): RLayer[ZEnv, AwsEnv] =
-  val config: RLayer[ZEnv, Has[Configuration]] = ZLayer.fromService(AwsConfiguration(_))
-  val logs: RLayer[ZEnv, Has[Logging]] = config >>> ZLayer.fromService(AwsLogging(_, context.getLogger))
-  ZLayer.requires[ZEnv] ++ config ++ logs
+object AwsEnv extends (Context => RLayer[ZEnv, AwsEnv]) :
+
+  /**
+   * Creates a new AWS environment.
+   *
+   * @param context The context to create the environment in.
+   * @return A new AWS environment.
+   */
+  override def apply(context: Context): RLayer[ZEnv, AwsEnv] =
+    val config: RLayer[ZEnv, Has[Configuration]] = ZLayer.fromService(AwsConfiguration(_))
+    val logs: RLayer[ZEnv, Has[Logging]] = config >>> ZLayer.fromService(AwsLogging(_, context.getLogger))
+    ZLayer.requires[ZEnv] ++ config ++ logs
 
 /** AWS extensions to all events. */
-extension [T : ClassTag] (* : Event[T])
+extension[T: ClassTag] (* : Event[T])
 
-  /** Returns the name of the SQS queue associated with the event. */
+/** Returns the name of the SQS queue associated with the event. */
   def sqsQueueName: String = s"$Application${summon[ClassTag[T]].getClass.getSimpleName}Queue"
 
 /** The "BatchSize" string. */
@@ -101,6 +109,9 @@ inline def Role = "Role"
 
 /** The "Runtime" string. */
 inline def Runtime = "Runtime"
+
+/** The "Scheduled" string. */
+inline def Scheduled = "Scheduled"
 
 /** The "Tags" string. */
 inline def Tags = "Tags"

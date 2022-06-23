@@ -1,4 +1,4 @@
-/* ComposerService.scala
+/* ComposerEventHandler.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -28,7 +28,7 @@ import repository.*
 import twitter.*
 
 /**
- * The definition of the composer service.
+ * The definition of the composer event handler.
  *
  * @param log         The log to use.
  * @param retryPolicy The retry policy to use.
@@ -37,7 +37,7 @@ import twitter.*
  * @param twitter     The Twitter event publisher.
  * @param fallback    The composer event publisher to retry with.
  */
-final class ComposerService(
+final class ComposerEventHandler(
   log: Log,
   retryPolicy: RetryPolicy,
   repository: Repository,
@@ -63,7 +63,7 @@ final class ComposerService(
     case problem if problem.shouldRetry =>
       retryPolicy(event).fold(IO.fail(problem)) { backoff =>
         log.warn(Messages.retryingComposition(event, backoff)) *>
-          fallback(Event[ComposerEvent].nextAttempt(event), backoff) catchAll { thrown =>
+          fallback(event.copy(retry = Some(event.retry.fold(1)(Math.max(0, _) + 1))), backoff) catchAll { thrown =>
           IO.fail(ComposerProblem(Messages.failedToRetryComposition(event), Option(thrown)))
         }
       }

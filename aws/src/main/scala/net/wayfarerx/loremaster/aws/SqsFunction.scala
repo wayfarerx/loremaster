@@ -15,27 +15,25 @@ package aws
 
 import scala.jdk.CollectionConverters.*
 
-
 import com.amazonaws.services.lambda.runtime.RequestHandler
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 
 import io.circe.Decoder
 
-import zio.{Has, RIO, URIO}
+import zio.{Has, RIO}
 
 import logging.*
 
 /**
- * Base type for SQS Lambda functions that operate in the specified environment.
+ * Base type for SQS Lambda functions.
  *
  * @tparam T The type of message this SQS function handles.
  */
-trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
-  self: RequestHandler[SQSEvent, String] =>
+trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] with RequestHandler[SQSEvent, String] :
 
   /* Process a SQS event. */
-  final override def apply(event: SQSEvent): RIO[Environment & Has[Log], Unit] =
-    onMessages(event.getRecords.asScala.toList)
+  final override def apply(event: SQSEvent): RIO[EnvironmentWithLog, Unit] =
+    onMessages(event.getRecords.iterator.asScala.toList)
 
   /**
    * Handles messages from the SQS queue.
@@ -43,20 +41,19 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
    * @param messages The messages to handle.
    * @return An effect that handles the specified messages.
    */
-  private def onMessages(messages: List[SQSEvent.SQSMessage]): URIO[Environment & Has[Log], Unit] = messages match
+  private def onMessages(messages: List[SQSEvent.SQSMessage]): RIO[EnvironmentWithLog, Unit] = messages match
     case head :: tail =>
       for
-        log <- RIO.service[Log]
-        _ <- Option(head.getBody).filterNot(_.isEmpty).fold(URIO.unit) { message =>
+        _ <- Option(head.getBody).filterNot(_.isEmpty).fold(RIO.unit) { message =>
           parse[T](message).fold(
-            log.error(Messages.failedToParseSqsMessage(message), _),
-            onMessage(_).catchAll(log.error(Messages.failedToDeliverSqsMessage(message), _))
+            thrown => RIO.service[Log] flatMap (_.error(Messages.failedToParseSqsMessage(message), thrown)),
+            onMessage(_)
           )
         }
         _ <- onMessages(tail)
       yield ()
     case Nil =>
-      URIO.unit
+      RIO.unit
 
   /**
    * Handles a message from the SQS queue.
@@ -64,4 +61,4 @@ trait SqsFunction[T: Decoder] extends LambdaFunction[SQSEvent] :
    * @param message The message to handle.
    * @return A task that handles the specified message.
    */
-  protected def onMessage(message: T): RIO[Environment, Unit]
+  protected def onMessage(message: T): RIO[EnvironmentWithLog, Unit]
