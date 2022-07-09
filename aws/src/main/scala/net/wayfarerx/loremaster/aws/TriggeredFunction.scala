@@ -1,4 +1,4 @@
-/* ScheduledFunction.scala
+/* TriggeredFunction.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -21,21 +21,19 @@ import com.amazonaws.services.lambda.runtime.RequestHandler
 
 import zio.RIO
 
-import logging.*
-
 /**
- * Base type for scheduled Lambda functions.
+ * Base type for triggered Lambda functions.
  */
-trait ScheduledFunction extends LambdaFunction[JMap[String, String]] with RequestHandler[JMap[String, String], String] :
+trait TriggeredFunction extends LambdaFunction[JMap[String, String]] with RequestHandler[JMap[String, String], String] :
 
-  /* Process a scheduled event. */
+  /* Process a triggered event. */
   final override def apply(event: JMap[String, String]): RIO[EnvironmentWithLog, Unit] =
-    onSchedule(event.asScala.toMap)
+    onTrigger(event.asScala.toMap)
 
   /**
-   * Handles a scheduled event.
-   * 
-   * @param event The event to handle.
-   * @return A task that handles the specified event.
+   * Handles a triggered invocation.
+   *
+   * @param invocation The invocation to handle.
+   * @return A task that handles the specified invocation.
    */
-  protected def onSchedule(event: Map[String, String]): RIO[EnvironmentWithLog, Unit]
+  protected def onTrigger(invocation: Map[String, String]): RIO[EnvironmentWithLog, Unit]

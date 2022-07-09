@@ -80,11 +80,11 @@ object OpenNlpRenderer extends (Detokenizer => OpenNlpRenderer) :
   /**
    * Configures a new OpenNLP renderer.
    *
-   * @param detokenizerDictionary The name of the NLP detokenizer dictionary to use.
    * @param config The configuration to use.
+   * @param detokenizerDictionary The name of the NLP detokenizer dictionary to use.
    * @return A new OpenNLP renderer.
    */
-  def configure(detokenizerDictionary: String, config: Configuration): Task[OpenNlpRenderer] = for
+  def configure(config: Configuration, detokenizerDictionary: String): Task[OpenNlpRenderer] = for
     dictionaryConfig <- config.get[String](detokenizerDictionary)
     dictionaryUri <- dictionaryConfig.filterNot(_.isEmpty).fold(UIO.none)(uri => Task(Option(URI.create(uri))))
     dictionaryData <- loadData(dictionaryUri, DefaultDetokenizerDictionary).use(Task apply DetokenizationDictionary(_))

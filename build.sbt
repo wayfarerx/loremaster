@@ -153,4 +153,4 @@ lazy val main = project.in(file(Main))
     stackParameters := List("Version" -> version.value),
     shipFunctions := Def.unit(None),
     shipStack := deployStack.value
-  ).dependsOn(composer, twitter)
+  ).dependsOn(aws, composer, twitter)

@@ -14,25 +14,33 @@ package net.wayfarerx.loremaster
 package composer
 package deployment
 
+import scala.language.implicitConversions
 import aws.*
 import event.*
+import io.circe.Json
 
+/**
+ * Deploys the composer components.
+ */
 trait ComposerDeployment extends Deployment :
 
+  /* The parameters required by composer deployments. */
   override def parameters: Entries = super.parameters ++
-    scheduledLambdaFunctionParameters(Composer) ++
-    sqsQueueDeliversToLambdaFunctionParameters(Composer) +
+    triggerLambdaFunctionParameters(Composer) ++
+    handlerLambdaFunctionParameters(Composer) +
     parameter(ComposerDetokenizerDictionary, Messages.detokenizerDictionary, "") +
     parameter(ComposerRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
 
+  /* The resources provided by composer deployments. */
   override def resources: Entries = super.resources ++
-    scheduledLambdaFunction[ComposerScheduler](
-      Messages.scheduleDescription,
-      Composer
-    ) ++
-    sqsQueueDeliversToLambdaFunction[ComposerEvent, ComposerFunction](
-      Messages.functionDescription,
+    triggerLambdaFunction[ComposerTrigger](
       Composer,
+      Messages.triggerDescription,
+      Map()
+    ) ++
+    handlerLambdaFunction[ComposerEvent, ComposerHandler](
+      Composer,
+      Messages.handlerDescription,
       Map(
         ComposerDetokenizerDictionary -> ref(ComposerDetokenizerDictionary),
         ComposerRetryPolicy -> ref(ComposerRetryPolicy)

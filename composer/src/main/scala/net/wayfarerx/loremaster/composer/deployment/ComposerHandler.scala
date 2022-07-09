@@ -1,4 +1,4 @@
-/* TwitterFunction.scala
+/* ComposerHandler.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -30,9 +30,9 @@ import nlp.deployment.OpenNlpRenderer
 import repository.deployment.MockRepository
 
 /**
- * An AWS SQS Lambda function that composes books.
+ * An AWS Lambda function that handles composer events.
  */
-final class ComposerFunction extends SqsFunction[ComposerEvent] :
+final class ComposerHandler extends SqsFunction[ComposerEvent] :
 
   /* The type of environment to use. */
   override type Environment = AwsEnv & Has[ComposerEventHandler]
@@ -47,7 +47,7 @@ final class ComposerFunction extends SqsFunction[ComposerEvent] :
         retryPolicy <- config[RetryPolicy](ComposerRetryPolicy)
         repository <- UIO(MockRepository) // FIXME Use a real repository.
         rng <- RIO.service[Random.Service]
-        renderer <- OpenNlpRenderer.configure(ComposerDetokenizerDictionary, config)
+        renderer <- OpenNlpRenderer.configure(config, ComposerDetokenizerDictionary)
       yield ComposerEventHandler(
         log,
         retryPolicy,

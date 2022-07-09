@@ -110,8 +110,8 @@ inline def Role = "Role"
 /** The "Runtime" string. */
 inline def Runtime = "Runtime"
 
-/** The "Scheduled" string. */
-inline def Scheduled = "Scheduled"
+/** The "Trigger" string. */
+inline def Trigger = "Trigger"
 
 /** The "Tags" string. */
 inline def Tags = "Tags"

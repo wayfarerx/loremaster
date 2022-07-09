@@ -1,4 +1,4 @@
-/* ComposerScheduler.scala
+/* ComposerTrigger.scala
  *
  * Copyright (c) 2022 wayfarerx (@thewayfarerx).
  *
@@ -23,9 +23,9 @@ import event.*
 import logging.*
 
 /**
- * A scheduled AWS Lambda function that triggers the composer.
+ * An AWS Lambda function that generates composer events.
  */
-final class ComposerScheduler extends ScheduledFunction :
+final class ComposerTrigger extends TriggeredFunction :
 
   /* The type of environment to use. */
   override type Environment = AwsEnv & Has[Publisher[ComposerEvent]]
@@ -35,9 +35,9 @@ final class ComposerScheduler extends ScheduledFunction :
     ZLayer.requires[AwsEnv] ++ ZLayer.fromEffect(UIO(SqsPublisher[ComposerEvent]))
 
   /* Schedule the specified composition. */
-  override protected def onSchedule(event: Map[String, String]): RIO[EnvironmentWithLog, Unit] = for
+  override protected def onTrigger(invocation: Map[String, String]): RIO[EnvironmentWithLog, Unit] = for
     publisher <- RIO.service[Publisher[ComposerEvent]]
-    composition <- compose(event)
+    composition <- compose(invocation)
     _ <- publisher(ComposerEvent(composition))
   yield ()
 

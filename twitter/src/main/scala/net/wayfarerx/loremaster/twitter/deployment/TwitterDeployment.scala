@@ -15,9 +15,10 @@ package twitter
 package deployment
 
 import scala.concurrent.duration.*
-
+import scala.language.implicitConversions
 import aws.*
 import event.*
+import io.circe.Json
 
 /**
  * Deploys the Twitter components.
@@ -26,16 +27,16 @@ trait TwitterDeployment extends Deployment :
 
   /* The parameters required by Twitter deployments. */
   override def parameters: Entries = super.parameters ++
-    sqsQueueDeliversToLambdaFunctionParameters(Twitter) +
+    handlerLambdaFunctionParameters(Twitter) +
     parameter(TwitterConnectionTimeout, Messages.connectionTimeout, 5.seconds) +
     parameter(TwitterRetryPolicy, Messages.retryPolicy, RetryPolicy.Default)
 
 
   /* The resources provided by Twitter deployments. */
   override def resources: Entries = super.resources ++
-    sqsQueueDeliversToLambdaFunction[TwitterEvent, TwitterFunction](
-      Messages.description,
+    handlerLambdaFunction[TwitterEvent, TwitterFunction](
       Twitter,
+      Messages.description,
       Map(
         TwitterConsumerKey -> resolveSecret(TwitterConsumerKey),
         TwitterConsumerSecret -> resolveSecret(TwitterConsumerSecret),
